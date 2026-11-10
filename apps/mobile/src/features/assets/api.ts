@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AssetDto, AssetInput } from '@heartwood/shared';
+import type { AssetDto, AssetInput, AssetUpdate } from '@heartwood/shared';
 import { apiFetch, postJson } from '../../api/client';
 
 export const assetKeys = { all: ['assets'] as const };
@@ -16,5 +16,15 @@ export const useCreateAsset = () => {
       input: Omit<AssetInput, 'institution' | 'notes' | 'roughValue'> & Partial<AssetInput>
     ) => postJson<AssetDto>('/assets', input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: assetKeys.all }),
+  });
+};
+
+export const useUpdateAsset = (id: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: AssetUpdate) =>
+      apiFetch<AssetDto>(`/assets/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+    // The report names assets, so it goes stale with them.
+    onSuccess: () => queryClient.invalidateQueries(),
   });
 };

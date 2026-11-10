@@ -16,6 +16,7 @@ const AppLayout = () => {
       <Stack.Screen name="add-asset" options={{ title: 'Add an asset', presentation: 'modal' }} />
       <Stack.Screen name="asset/[id]/index" options={{ title: 'Asset' }} />
       <Stack.Screen name="asset/[id]/edit" options={{ title: 'Edit distribution' }} />
+      <Stack.Screen name="asset/[id]/details" options={{ title: 'Edit asset' }} />
       <Stack.Screen name="beneficiary" options={{ title: 'Beneficiary', presentation: 'modal' }} />
       <Stack.Screen name="residuary" options={{ title: 'Everything else' }} />
       <Stack.Screen name="executors" options={{ title: 'Executor and lawyer' }} />
