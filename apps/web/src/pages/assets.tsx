@@ -42,7 +42,9 @@ export const AssetsPage = () => {
                   {asset.institution && (
                     <p className="text-ink/60 dark:text-white/60">{asset.institution}</p>
                   )}
-                  <p className="text-ink/60 dark:text-white/60">{formatValue(asset.roughValue)}</p>
+                  <p className="text-ink/60 dark:text-white/60">
+                    {formatValue(asset.roughValue, asset.currency)}
+                  </p>
                 </Link>
               </li>
             ))}

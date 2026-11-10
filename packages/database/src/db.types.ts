@@ -57,6 +57,7 @@ export interface Allocation {
 
 export interface Asset {
   created_at: Generated<Timestamp>;
+  currency: Generated<string>;
   deleted_at: Timestamp | null;
   deleted_by: string | null;
   description: string;

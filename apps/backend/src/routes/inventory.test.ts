@@ -69,6 +69,27 @@ describe('inventory', () => {
       expect((await api.get('/api/assets')).body).toHaveLength(1);
     });
 
+    it('defaults to naira, stores a chosen currency and decimals, and rejects an unknown one', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const naira = await api.post('/api/assets', { type: 'cash', description: 'Savings' });
+      expect(naira.body.currency).toBe('NGN');
+      const usd = await api.post('/api/assets', {
+        type: 'cash',
+        description: 'Dollar account',
+        currency: 'USD',
+        roughValue: 1250.5,
+      });
+      expect(usd.body).toMatchObject({ currency: 'USD', roughValue: 1250.5 });
+      const changed = await api.patch(`/api/assets/${usd.body.id}`, { currency: 'GBP' });
+      expect(changed.body.currency).toBe('GBP');
+      const bad = await api.post('/api/assets', {
+        type: 'cash',
+        description: 'x',
+        currency: 'XYZ',
+      });
+      expect(bad.status).toBe(400);
+    });
+
     it('rejects an unknown type, an empty description and a negative value', async () => {
       const api = as((await registerTestUser(app)).bearer);
       expect((await api.post('/api/assets', { type: 'boat', description: 'x' })).status).toBe(400);

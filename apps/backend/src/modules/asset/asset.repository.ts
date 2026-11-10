@@ -25,6 +25,7 @@ export const insertAsset = (
     type: string;
     description: string;
     institution: string | null;
+    currency: string;
     rough_value: number | null;
     notes: string | null;
   }
@@ -38,6 +39,7 @@ export const updateAsset = (
     type: string;
     description: string;
     institution: string | null;
+    currency: string;
     rough_value: number | null;
     notes: string | null;
   }>

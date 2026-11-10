@@ -11,5 +11,10 @@ export const ASSET_TYPES = [
   'other',
 ] as const;
 
+export const CURRENCIES = ['NGN', 'USD', 'GBP', 'EUR'] as const;
+export type Currency = (typeof CURRENCIES)[number];
+export const DEFAULT_CURRENCY: Currency = 'NGN';
+export const currencySchema = z.enum(CURRENCIES);
+
 export const assetTypeSchema = z.enum(ASSET_TYPES);
 export type AssetType = z.infer<typeof assetTypeSchema>;

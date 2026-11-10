@@ -20,7 +20,7 @@ const AssetRow = ({ asset, onPress }: { asset: AssetDto; onPress: () => void }) 
       <Text className="text-ink/60 dark:text-white/60">{asset.institution}</Text>
     )}
     <Text className="mt-1 text-sm text-ink/70 dark:text-white/70">
-      {formatValue(asset.roughValue)}
+      {formatValue(asset.roughValue, asset.currency)}
     </Text>
   </Pressable>
 );

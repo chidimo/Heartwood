@@ -7,6 +7,7 @@ const FLAT: AssetDto = {
   type: 'property',
   description: '3-bedroom flat',
   institution: 'Lagos State Land Registry',
+  currency: 'NGN',
   roughValue: 45000000,
   notes: 'Title deed is with the family lawyer',
   createdAt: '',
@@ -24,7 +25,7 @@ describe('AssetForm', () => {
       />
     );
     expect(screen.getByDisplayValue('Title deed is with the family lawyer')).toBeTruthy();
-    expect(screen.getByDisplayValue('45000000')).toBeTruthy();
+    expect(screen.getByDisplayValue('45,000,000.00')).toBeTruthy();
   });
 
   it('sends the edited notes with the rest unchanged', async () => {
@@ -41,6 +42,7 @@ describe('AssetForm', () => {
       type: 'property',
       description: '3-bedroom flat',
       institution: 'Lagos State Land Registry',
+      currency: 'NGN',
       roughValue: 45000000,
       notes: 'Deed is in the safe',
     });
@@ -51,5 +53,20 @@ describe('AssetForm', () => {
     expect(
       screen.getByRole('button', { name: 'Save asset' }).props.accessibilityState.disabled
     ).toBe(true);
+  });
+
+  it('keeps decimals while typing an amount', async () => {
+    const onSubmit = jest.fn();
+    await render(<AssetForm submitLabel="Save asset" isPending={false} onSubmit={onSubmit} />);
+    await fireEvent.changeText(screen.getByLabelText('Describe it'), 'Savings');
+    const amount = screen.getByLabelText('Rough value (optional)');
+    await fireEvent.changeText(amount, '1250.5');
+    expect(screen.getByDisplayValue('1,250.5')).toBeTruthy();
+    await fireEvent(amount, 'blur');
+    expect(screen.getByDisplayValue('1,250.50')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Save asset'));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'NGN', roughValue: 1250.5 })
+    );
   });
 });

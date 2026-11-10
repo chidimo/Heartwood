@@ -18,6 +18,7 @@ const toDto = (row: AssetRow): AssetDto => ({
   type: row.type as AssetDto['type'],
   description: row.description,
   institution: row.institution,
+  currency: row.currency as AssetDto['currency'],
   roughValue: row.rough_value === null ? null : Number(row.rough_value),
   notes: row.notes,
   createdAt: row.created_at.toISOString(),
@@ -40,6 +41,7 @@ export const createAsset = (db: DbClient, ownerId: string, input: AssetInput) =>
       type: input.type,
       description: input.description,
       institution: input.institution,
+      currency: input.currency,
       rough_value: input.roughValue,
       notes: input.notes,
     });
@@ -60,6 +62,7 @@ export const updateAsset = (db: DbClient, ownerId: string, id: string, input: As
       type: input.type,
       description: input.description,
       institution: input.institution,
+      currency: input.currency,
       rough_value: input.roughValue,
       notes: input.notes,
     });

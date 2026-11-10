@@ -65,7 +65,9 @@ const AssetView = ({ asset }: { asset: AssetDto }) => {
         </p>
         <Heading>{asset.description}</Heading>
         {asset.institution && <p className="text-ink/70 dark:text-white/70">{asset.institution}</p>}
-        <p className="text-ink/70 dark:text-white/70">{formatValue(asset.roughValue)}</p>
+        <p className="text-ink/70 dark:text-white/70">
+          {formatValue(asset.roughValue, asset.currency)}
+        </p>
         {asset.notes && <p className="mt-2 text-ink/70 dark:text-white/70">{asset.notes}</p>}
         <Link
           to="/assets/$id/details"

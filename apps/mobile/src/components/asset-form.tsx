@@ -1,16 +1,23 @@
 import { useState } from 'react';
 import {
   ASSET_TYPE_LABELS,
+  CURRENCIES,
+  CURRENCY_LABELS,
+  type Currency,
   ASSET_TYPES,
   type AssetDto,
   type AssetInput,
   type AssetType,
+  amountToInput,
+  parseAmount,
 } from '@heartwood/shared';
 import { Button } from './button';
 import { Screen } from './screen';
 import { Select } from './select';
+import { AmountField } from './amount-field';
 import { TextField } from './text-field';
 
+const CURRENCY_OPTIONS = CURRENCIES.map(value => ({ value, label: CURRENCY_LABELS[value] }));
 const TYPE_OPTIONS = ASSET_TYPES.map(value => ({ value, label: ASSET_TYPE_LABELS[value] }));
 const NO_ACCOUNT_NUMBERS = "Don't enter account numbers or PINs. A name is enough.";
 
@@ -27,16 +34,18 @@ export const AssetForm = ({ existing, submitLabel, isPending, onSubmit }: Props)
   const [type, setType] = useState<AssetType>(existing?.type ?? 'cash');
   const [description, setDescription] = useState(existing?.description ?? '');
   const [institution, setInstitution] = useState(existing?.institution ?? '');
-  const [value, setValue] = useState(existing?.roughValue?.toString() ?? '');
+  const [currency, setCurrency] = useState<Currency>(existing?.currency ?? 'NGN');
+  const [value, setValue] = useState(amountToInput(existing?.roughValue));
   const [notes, setNotes] = useState(existing?.notes ?? '');
 
   const handleSave = () => {
-    const roughValue = value.trim() ? Number(value.replace(/,/g, '')) : null;
+    const roughValue = parseAmount(value);
     onSubmit({
       type,
       description: description.trim(),
       institution: institution.trim() || null,
-      roughValue: roughValue !== null && Number.isFinite(roughValue) ? roughValue : null,
+      currency,
+      roughValue,
       notes: notes.trim() || null,
     });
   };
@@ -62,12 +71,8 @@ export const AssetForm = ({ existing, submitLabel, isPending, onSubmit }: Props)
         onChangeText={setInstitution}
         hint="For example the bank, registry or company name."
       />
-      <TextField
-        label="Rough value in naira (optional)"
-        value={value}
-        onChangeText={setValue}
-        keyboardType="numeric"
-      />
+      <Select label="Currency" value={currency} options={CURRENCY_OPTIONS} onChange={setCurrency} />
+      <AmountField label="Rough value (optional)" value={value} onChangeText={setValue} />
       <TextField
         label="Notes (optional)"
         value={notes}

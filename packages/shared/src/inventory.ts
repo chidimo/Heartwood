@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ASSET_TYPES } from './asset-types';
+import { ASSET_TYPES, currencySchema, DEFAULT_CURRENCY, type Currency } from './asset-types';
 
 // Free text is the leak path for account numbers (docs/standards/security.md Rule 1): a Nigerian
 // bank account (NUBAN) is 10 digits, so refuse any run of 10 or more digits in asset text.
@@ -16,6 +16,7 @@ export const assetFields = {
   type: z.enum(ASSET_TYPES),
   description: safeText(500).pipe(z.string().min(1)),
   institution: optionalText(200),
+  currency: currencySchema.default(DEFAULT_CURRENCY),
   roughValue: z
     .number()
     .min(0)
@@ -31,6 +32,7 @@ export const assetUpdateSchema = z.object({
   type: assetFields.type.optional(),
   description: assetFields.description.optional(),
   institution: safeText(200).nullable().optional(),
+  currency: currencySchema.optional(),
   roughValue: z.number().min(0).max(1e15).nullable().optional(),
   notes: safeText(2000).nullable().optional(),
 });
@@ -41,6 +43,7 @@ export interface AssetDto {
   type: (typeof ASSET_TYPES)[number];
   description: string;
   institution: string | null;
+  currency: Currency;
   roughValue: number | null;
   notes: string | null;
   createdAt: string;

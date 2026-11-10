@@ -69,7 +69,9 @@ const AssetView = ({ asset }: { asset: AssetDto }) => {
         {asset.institution && (
           <Text className="text-ink/70 dark:text-white/70">{asset.institution}</Text>
         )}
-        <Text className="text-ink/70 dark:text-white/70">{formatValue(asset.roughValue)}</Text>
+        <Text className="text-ink/70 dark:text-white/70">
+          {formatValue(asset.roughValue, asset.currency)}
+        </Text>
         {asset.notes && <Text className="mt-2 text-ink/70 dark:text-white/70">{asset.notes}</Text>}
         <Pressable onPress={handleEditDetails} accessibilityRole="button" className="mt-1">
           <Text className="text-primary-600 dark:text-primary-200">Edit details</Text>

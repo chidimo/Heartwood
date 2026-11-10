@@ -5,3 +5,4 @@ export * from './client/allocation-form';
 export * from './client/labels';
 export * from './client/dates';
 export * from './client/asset-labels';
+export * from './client/amount';
