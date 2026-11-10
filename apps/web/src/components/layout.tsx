@@ -1,13 +1,9 @@
+import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Link, Navigate, Outlet } from '@tanstack/react-router';
+import { Navigate, Outlet } from '@tanstack/react-router';
+import { Menu } from 'lucide-react';
 import { useAuth } from '../auth/use-auth';
-import { Button } from './button';
-
-const NAV = [
-  { to: '/assets', label: 'Assets' },
-  { to: '/people', label: 'People' },
-  { to: '/review', label: 'Review' },
-] as const;
+import { Sidebar } from './sidebar';
 
 export const Heading = ({ children }: { children: ReactNode }) => (
   <h1 className="text-2xl font-semibold">{children}</h1>
@@ -16,6 +12,7 @@ export const Heading = ({ children }: { children: ReactNode }) => (
 /** Signed-in pages: redirects to sign-in when there is no session. */
 export const AppLayout = () => {
   const { status, account, signOut } = useAuth();
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   if (status === 'loading') {
     return (
@@ -26,33 +23,37 @@ export const AppLayout = () => {
   }
   if (status === 'signedOut') return <Navigate to="/login" />;
 
+  const handleSignOut = () => {
+    setIsNavOpen(false);
+    void signOut();
+  };
+
   return (
     <div className="min-h-screen">
-      <header className="border-b border-primary-600/20">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-4 px-6 py-3">
-          <span className="text-lg font-semibold text-primary-700 dark:text-primary-200">
-            Heartwood
-          </span>
-          <nav aria-label="Main" className="flex flex-1 gap-4">
-            {NAV.map(item => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="text-ink/70 hover:text-ink dark:text-white/70 dark:hover:text-white"
-                activeProps={{ className: 'font-semibold text-primary-700 dark:text-primary-200' }}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <span className="text-sm text-ink/60 dark:text-white/60">{account?.name}</span>
-          <Button variant="link" onClick={() => void signOut()}>
-            Sign out
-          </Button>
-        </div>
+      <Sidebar
+        isOpen={isNavOpen}
+        onClose={() => setIsNavOpen(false)}
+        name={account?.name}
+        email={account?.email}
+        onSignOut={handleSignOut}
+      />
+      <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-primary-600/20 bg-white/90 px-4 backdrop-blur lg:hidden dark:bg-ink/90">
+        <button
+          type="button"
+          onClick={() => setIsNavOpen(true)}
+          aria-label="Open navigation"
+          className="rounded-lg p-2 hover:bg-primary-600/10"
+        >
+          <Menu className="h-5 w-5" aria-hidden />
+        </button>
+        <span className="text-lg font-semibold text-primary-700 dark:text-primary-200">
+          Heartwood
+        </span>
       </header>
-      <main className="mx-auto flex max-w-3xl flex-col gap-5 px-6 py-6">
-        <Outlet />
+      <main className="py-6 lg:pl-64">
+        <div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 sm:px-6">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

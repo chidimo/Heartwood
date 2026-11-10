@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { DbClient } from '@heartwood/database';
 import {
   assetInputSchema,
+  CONDITION_KINDS,
   beneficiaryInputSchema,
   executorInputSchema,
   registerSchema,
@@ -49,8 +50,9 @@ const inventoryFile = z.object({
           // A condition names its holder (an executor or lawyer) and any fallback person by name.
           condition: z
             .object({
-              kind: z.enum(['min_age', 'other']),
+              kind: z.enum(CONDITION_KINDS),
               minAge: z.number().optional(),
+              days: z.number().optional(),
               text: z.string().optional(),
               ifUnmet: z.string(),
               holder: z.string(),
@@ -95,6 +97,7 @@ const seedInventory = async (db: DbClient, ownerId: string, inventory: Inventory
           ? {
               kind: e.condition.kind,
               minAge: e.condition.minAge,
+              days: e.condition.days,
               text: e.condition.text,
               ifUnmet: e.condition.ifUnmet,
               holderId: idByName(executors, e.condition.holder, 'executor'),

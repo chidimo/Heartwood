@@ -11,22 +11,24 @@ export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
-const formatterFor = (currency: string) => {
-  let formatter = formatters.get(currency);
+// Whole amounts show no decimals; anything with cents always shows both digits.
+const formatterFor = (currency: string, whole: boolean) => {
+  const key = `${currency}:${whole}`;
+  let formatter = formatters.get(key);
   if (!formatter) {
     formatter = new Intl.NumberFormat('en-NG', {
       style: 'currency',
       currency,
-      minimumFractionDigits: 0,
+      minimumFractionDigits: whole ? 0 : 2,
       maximumFractionDigits: 2,
     });
-    formatters.set(currency, formatter);
+    formatters.set(key, formatter);
   }
   return formatter;
 };
 
 export const formatValue = (value: number | null, currency: string = 'NGN'): string =>
-  value === null ? 'Value not set' : formatterFor(currency).format(value);
+  value === null ? 'Value not set' : formatterFor(currency, Number.isInteger(value)).format(value);
 
 export const CURRENCY_LABELS: Record<Currency, string> = {
   NGN: 'Naira (₦)',
