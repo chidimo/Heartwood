@@ -8,6 +8,7 @@ const AppLayout = () => {
       screenOptions={{
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
+        headerBackTitle: 'Back',
         headerTitleStyle: { color: colors.text },
       }}
     >

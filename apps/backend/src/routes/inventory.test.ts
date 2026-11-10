@@ -423,6 +423,19 @@ describe('inventory', () => {
       );
     });
 
+    it('names what each issue is about', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      await newAsset(api, { description: 'Savings at GTBank' });
+      await newBeneficiary(api, { name: 'Ngozi Obi' });
+      const issues = (await api.get('/api/inventory/report')).body.issues;
+      expect(issues).toContainEqual(
+        expect.objectContaining({ code: 'asset_uncovered', subject: 'Savings at GTBank' })
+      );
+      expect(issues).toContainEqual(
+        expect.objectContaining({ code: 'beneficiary_no_contingency', subject: 'Ngozi Obi' })
+      );
+    });
+
     it('asks for a beneficiary when there are assets and none', async () => {
       const api = as((await registerTestUser(app)).bearer);
       await newAsset(api);

@@ -37,7 +37,10 @@ const IssueRow = ({ issue, onPress }: { issue: InventoryIssue; onPress: () => vo
       SEVERITY_STYLES[issue.severity]
     )}
   >
-    <Text className="text-base text-ink dark:text-white">{issue.message}</Text>
+    {issue.subject && (
+      <Text className="mb-1 text-base font-semibold text-ink dark:text-white">{issue.subject}</Text>
+    )}
+    <Text className="text-ink/80 dark:text-white/80">{issue.message}</Text>
   </Pressable>
 );
 

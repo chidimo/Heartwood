@@ -164,6 +164,11 @@ build nothing that shows real data without it being easy to add.
   phone; passing tests don't show that a screen renders correctly. For anything touching Metro, native config or
   `@heartwood/shared`, run `npx expo export --platform ios` as a bundling smoke test.
 
+- When driving the iOS Simulator by script: its text injection stops after about 13 characters and can drop
+  characters right after a field gets focus. Type in chunks of 12 or fewer, wait, and check the field before
+  tapping Save. Don't tear down the Postgres a running dev backend uses when you run the test script: give dev
+  its own database (`docker-compose.yml`, port 5434) and tests theirs (`docker-compose.test.yml`, 5433).
+
 **Why:** Falcon's mobile code isn't linted and its offline queue is "unit-tested, awaiting on-device testing" for
 weeks; Olamma's lint rules were added after an un-awaited promise sent an empty upload on Android.
 

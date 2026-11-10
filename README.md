@@ -40,7 +40,7 @@ Stack is the same as [Concord](../Concord): Nx + Yarn 1, Node 22, TypeScript, Ex
 
 ```bash
 yarn install
-docker compose up -d                      # local Postgres on :5432
+docker compose up -d                      # dev Postgres on :5434 (tests use their own on :5433)
 cp apps/backend/.env.example apps/backend/.env
 yarn db:migrate
 yarn dev                                  # backend :4300 and web :5175

@@ -223,6 +223,8 @@ export interface InventoryIssue {
   severity: IssueSeverity;
   entity: 'asset' | 'beneficiary' | 'inventory';
   id: string | null;
+  /** What the issue is about, to show above the message: the asset's description or the person's name. */
+  subject: string | null;
   message: string;
 }
 

@@ -79,6 +79,7 @@ export const getInventoryReport = async (
       severity: 'error',
       entity: 'inventory',
       id: null,
+      subject: null,
       message: 'Add at least one beneficiary.',
     });
   }
@@ -93,6 +94,7 @@ export const getInventoryReport = async (
             severity: 'info',
             entity: 'asset',
             id: asset.id,
+            subject: asset.description,
             message: 'Not allocated; it will pass under the residuary clause.',
           }
         : {
@@ -100,6 +102,7 @@ export const getInventoryReport = async (
             severity: 'error',
             entity: 'asset',
             id: asset.id,
+            subject: asset.description,
             message: 'Not allocated and there is no residuary clause to cover it.',
           }
     );
@@ -112,6 +115,7 @@ export const getInventoryReport = async (
         severity: 'warning',
         entity: 'beneficiary',
         id: b.id,
+        subject: b.name,
         message: 'No plan for if this beneficiary dies before you.',
       });
     }
@@ -121,6 +125,7 @@ export const getInventoryReport = async (
         severity: 'info',
         entity: 'beneficiary',
         id: b.id,
+        subject: b.name,
         message: 'Not receiving anything yet.',
       });
     }
