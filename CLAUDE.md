@@ -11,7 +11,7 @@ Heartwood helps people reach a valid, lawyer-reviewed will. The app never holds 
 
 ## Stack
 
-Same as Concord: Nx + Yarn 1 monorepo (`apps/*`, `packages/*`), Node 22, TypeScript, Express backend, Kysely + Postgres, React + Vite + TanStack Router/Query + Tailwind, Zod, Jest/Vitest. Packages are scoped `@heartwood/*`.
+Same as Concord: Nx + Yarn 1 monorepo (`apps/*`, `packages/*`), Node 22, TypeScript, Express backend, Kysely + Postgres, React + Vite + TanStack Router/Query + Tailwind, Zod, Jest/Vitest. Mobile is Expo (expo-router, NativeWind) in `apps/mobile`, a standalone package outside the yarn workspaces ([standards/mobile.md](docs/standards/mobile.md)). Packages are scoped `@heartwood/*`.
 
 ## Code
 
@@ -20,6 +20,9 @@ Same as Concord: Nx + Yarn 1 monorepo (`apps/*`, `packages/*`), Node 22, TypeScr
 - No nested or complex ternaries (`a ? x : b ? y : z`, or a ternary whose branches are long JSX). With more than two outcomes, use early returns in a small component or helper, an `if / else if` chain, or a lookup object. A single `cond ? a : b` is fine.
 - `useState` pairs follow `[thing, setThing]`: the setter is `set` plus the exact state name.
 - No boolean flag that picks which action a function takes (`savePref(enabled)`). Write two functions (`enablePref()` / `disablePref()`). A flag that only changes a value or option is fine.
+- In `apps/mobile`: persistent storage only through `storage` (`src/storage/storage.ts`), toasts only through `notify`, class names through `cn(...)`, network only through `apiFetch`. Never use `expo-secure-store`, AsyncStorage, `sonner-native` or a bare `fetch` directly. Add packages with `npx expo install`, and check the docs for the installed SDK first.
+- Use arrow functions (`const f = () => {}`) and named exports. Default exports only where a tool requires one: config files and Expo Router screens/layouts.
+- No nested template literals: build the inner string in a `const` first.
 - Run `yarn format` before committing. Formatting-only changes get their own commit ([standards/formatting.md](docs/standards/formatting.md)).
 
 ## Git branching workflow

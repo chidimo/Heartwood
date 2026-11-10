@@ -59,6 +59,16 @@ jobs:
       - name: Build web
         run: yarn web:build
 
+      # apps/mobile is a standalone package (not a yarn workspace), so it has its own install.
+      - name: Install mobile dependencies
+        run: yarn --cwd apps/mobile install --frozen-lockfile
+
+      - name: Mobile typecheck, lint and tests
+        run: |
+          yarn mobile:typecheck
+          yarn mobile:lint
+          yarn mobile:test --ci
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
