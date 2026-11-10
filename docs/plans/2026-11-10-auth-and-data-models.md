@@ -8,7 +8,7 @@ Owner: Chidi Orji <orjichidi95@gmail.com>
 
 Roadmap link: [`docs/roadmap.md`](../roadmap.md) §1 items 1–5
 
-Open questions: Q9 (what we store per asset), Q11 (how testators sign in), Q12 (executor/lawyer accounts), Q5 (customary/Islamic law). All built on their **working assumptions**, not answers: change the assumption and revisit this plan.
+Open questions: Q17 (gifts to organisations), Q9 (what we store per asset), Q11 (how testators sign in), Q12 (executor/lawyer accounts), Q5 (customary/Islamic law). All built on their **working assumptions**, not answers: change the assumption and revisit this plan.
 
 ## Objective
 
@@ -49,6 +49,15 @@ Checklist. One item at a time; commit each. Tests are written with the code, not
 - [x] Allocations (shares total exactly 100% or one specific bequest) + residuary + `GET /api/inventory/report`
 - [x] Executor
 - [x] Tests per resource: a second user gets 404 on read, update and delete. 55 backend tests pass (verified 2026-11-10)
+
+### Institutional beneficiaries (churches, charities, schools...)
+
+A beneficiary is a person or an organisation. An organisation has a type (church, mosque, charity, school, other), no relationship to the testator, and no "pass it to their children" option.
+
+- [x] Migration `add_beneficiary_kind` (data-preserving down; DB checks keep the fields consistent and forbid the children plan for organisations)
+- [x] Shared schema, service guards (kind never changes), report wording ("if this organisation no longer exists"); 13 backend tests including direct-insert constraint checks. 70 backend tests pass (verified 2026-11-10)
+- [x] Mobile: person/organisation toggle, type dropdown, contingency options that fit the kind, subtitles in lists and share editors; 75 mobile tests pass. Verified in the iOS Simulator: added "Grace Chapel" as a church, the "children" option is absent, the list shows its type
+- [ ] Registration number and wording rules for gifts to organisations: waiting on Q17
 
 ### Clients
 

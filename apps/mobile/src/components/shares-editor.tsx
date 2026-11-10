@@ -1,6 +1,7 @@
 import { Text, TextInput, View } from 'react-native';
 import type { BeneficiaryDto } from '@heartwood/shared';
 import { formatTotal, totalHundredths } from '../features/inventory/allocation-form';
+import { beneficiarySubtitle } from '../features/inventory/labels';
 import { cn } from '../utils/cn';
 
 interface Props {
@@ -20,7 +21,7 @@ export const SharesEditor = ({ beneficiaries, shares, onChange }: Props) => {
         <View key={b.id} className="flex-row items-center justify-between gap-3">
           <View className="flex-1">
             <Text className="text-base text-ink dark:text-white">{b.name}</Text>
-            <Text className="text-xs text-ink/60 dark:text-white/60">{b.relationship}</Text>
+            <Text className="text-xs text-ink/60 dark:text-white/60">{beneficiarySubtitle(b)}</Text>
           </View>
           <View className="w-28 flex-row items-center rounded-xl border border-primary-600/30 bg-white px-3 dark:bg-primary-900">
             <TextInput

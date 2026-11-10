@@ -4,7 +4,9 @@ import { SharesEditor } from '../shares-editor';
 
 const person = (id: string, name: string): BeneficiaryDto => ({
   id,
+  kind: 'person',
   name,
+  institutionType: null,
   relationship: 'Child',
   contact: null,
   contingencyPlan: null,
@@ -15,7 +17,20 @@ const person = (id: string, name: string): BeneficiaryDto => ({
 
 const PEOPLE = [person('a', 'Ada'), person('b', 'Bola')];
 
+const church: BeneficiaryDto = {
+  ...person('c', 'Grace Chapel'),
+  kind: 'institution',
+  relationship: null,
+  institutionType: 'church',
+};
+
 describe('SharesEditor', () => {
+  it('shows an organisation with its type instead of a relationship', async () => {
+    await render(<SharesEditor beneficiaries={[church]} shares={{}} onChange={jest.fn()} />);
+    expect(screen.getByText('Grace Chapel')).toBeTruthy();
+    expect(screen.getByText('Church')).toBeTruthy();
+  });
+
   it('shows each person and the running total', async () => {
     await render(
       <SharesEditor beneficiaries={PEOPLE} shares={{ a: '60', b: '25' }} onChange={jest.fn()} />

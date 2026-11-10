@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Pressable, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { BeneficiaryDto } from '@heartwood/shared';
+import type { BeneficiaryDto, BeneficiaryKind, InstitutionType } from '@heartwood/shared';
 import { errorMessage } from '../../src/api/client';
 import { Button } from '../../src/components/button';
 import { QueryState } from '../../src/components/query-state';
 import { Screen } from '../../src/components/screen';
+import { Segmented } from '../../src/components/segmented';
 import { Select } from '../../src/components/select';
 import { TextField } from '../../src/components/text-field';
 import {
@@ -14,7 +15,13 @@ import {
   useDeleteBeneficiary,
   useUpdateBeneficiary,
 } from '../../src/features/inventory/api';
-import { CONTINGENCY_OPTIONS, type ContingencyChoice } from '../../src/features/inventory/labels';
+import {
+  INSTITUTION_TYPE_OPTIONS,
+  KIND_OPTIONS,
+  contingencyOptionsFor,
+  contingencyQuestion,
+  type ContingencyChoice,
+} from '../../src/features/inventory/labels';
 import { notify } from '../../src/notifications/notify';
 import { confirmDestructive } from '../../src/utils/confirm';
 
@@ -31,11 +38,23 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
   const update = useUpdateBeneficiary(id);
   const remove = useDeleteBeneficiary(id);
 
+  const [kind, setKind] = useState<BeneficiaryKind>(existing?.kind ?? 'person');
   const [name, setName] = useState(existing?.name ?? '');
   const [relationship, setRelationship] = useState(existing?.relationship ?? '');
+  const [institutionType, setInstitutionType] = useState<InstitutionType>(
+    existing?.institutionType ?? 'church'
+  );
   const [contact, setContact] = useState(existing?.contact ?? '');
   const [plan, setPlan] = useState<ContingencyChoice>(existing?.contingencyPlan ?? 'unset');
   const [fallbackId, setFallbackId] = useState<string>(existing?.contingencyBeneficiaryId ?? '');
+
+  const isOrganisation = kind === 'institution';
+
+  // "Pass it to their children" doesn't apply to an organisation.
+  const handleKindChange = (next: BeneficiaryKind) => {
+    setKind(next);
+    if (next === 'institution' && plan === 'pass_to_descendants') setPlan('unset');
+  };
 
   const fallbackOptions = others.map(b => ({ value: b.id, label: b.name }));
   const needsFallback = plan === 'named_beneficiary';
@@ -49,24 +68,30 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
     notify.error(title, errorMessage(error, 'Try again.'));
 
   const handleSave = () => {
-    const payload = {
+    const common = {
       name: name.trim(),
-      relationship: relationship.trim(),
       contact: contact.trim() || null,
       contingencyPlan: plan === 'unset' ? null : plan,
       contingencyBeneficiaryId: needsFallback ? fallbackId : null,
     };
     if (existing) {
-      update.mutate(payload, {
-        onSuccess: () => handleDone('Saved'),
-        onError: handleFailed("Couldn't save"),
-      });
-    } else {
-      create.mutate(payload, {
-        onSuccess: () => handleDone('Beneficiary added'),
-        onError: handleFailed("Couldn't add"),
-      });
+      // The kind of an existing beneficiary can't change, so send only what fits it.
+      const fitting = isOrganisation ? { institutionType } : { relationship: relationship.trim() };
+      update.mutate(
+        { ...common, ...fitting },
+        { onSuccess: () => handleDone('Saved'), onError: handleFailed("Couldn't save") }
+      );
+      return;
     }
+    create.mutate(
+      {
+        ...common,
+        kind,
+        relationship: isOrganisation ? null : relationship.trim(),
+        institutionType: isOrganisation ? institutionType : null,
+      },
+      { onSuccess: () => handleDone('Beneficiary added'), onError: handleFailed("Couldn't add") }
+    );
   };
 
   const handleDelete = () =>
@@ -83,13 +108,34 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
 
   return (
     <Screen>
-      <TextField label="Name" value={name} onChangeText={setName} autoComplete="name" />
+      {!existing && <Segmented value={kind} options={KIND_OPTIONS} onChange={handleKindChange} />}
       <TextField
-        label="Relationship to you"
-        value={relationship}
-        onChangeText={setRelationship}
-        hint="For example daughter, brother, friend."
+        label={isOrganisation ? "Organisation's full name" : 'Name'}
+        value={name}
+        onChangeText={setName}
+        autoComplete="name"
+        hint={
+          isOrganisation
+            ? 'Use its full name, and say which branch or parish if it has more than one.'
+            : undefined
+        }
       />
+      {isOrganisation ? (
+        <Select
+          label="What kind of organisation is it?"
+          value={institutionType}
+          options={INSTITUTION_TYPE_OPTIONS}
+          onChange={setInstitutionType}
+          testID="institution-type"
+        />
+      ) : (
+        <TextField
+          label="Relationship to you"
+          value={relationship}
+          onChangeText={setRelationship}
+          hint="For example daughter, brother, friend."
+        />
+      )}
       <TextField
         label="Phone or email (optional)"
         value={contact}
@@ -97,9 +143,9 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
         autoCapitalize="none"
       />
       <Select
-        label="If they die before you"
+        label={contingencyQuestion(kind)}
         value={plan}
-        options={CONTINGENCY_OPTIONS}
+        options={contingencyOptionsFor(kind)}
         onChange={setPlan}
         testID="contingency"
       />
@@ -115,12 +161,18 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
         label="Save"
         onPress={handleSave}
         loading={saving}
-        disabled={!name.trim() || !relationship.trim() || (needsFallback && !fallbackId)}
+        disabled={
+          !name.trim() ||
+          (!isOrganisation && !relationship.trim()) ||
+          (needsFallback && !fallbackId)
+        }
         testID="save-beneficiary"
       />
       {existing && (
         <Pressable onPress={handleDelete} accessibilityRole="button">
-          <Text className="text-center text-danger">Remove this beneficiary</Text>
+          <Text className="text-center text-danger">
+            {isOrganisation ? 'Remove this organisation' : 'Remove this beneficiary'}
+          </Text>
         </Pressable>
       )}
     </Screen>
