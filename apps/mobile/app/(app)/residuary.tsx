@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Pressable, Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { BeneficiaryDto } from '@heartwood/shared';
+import {
+  type BeneficiaryDto,
+  residuaryFormProblem,
+  splitEvenly,
+  toResiduaryEntries,
+} from '@heartwood/shared';
 import { errorMessage } from '../../src/api/client';
 import { Button } from '../../src/components/button';
 import { QueryState } from '../../src/components/query-state';
 import { Screen } from '../../src/components/screen';
 import { SharesEditor } from '../../src/components/shares-editor';
-import {
-  residuaryFormProblem,
-  splitEvenly,
-  toResiduaryEntries,
-} from '../../src/features/inventory/allocation-form';
 import {
   useBeneficiaries,
   useReplaceResiduary,

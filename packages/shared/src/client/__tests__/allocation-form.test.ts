@@ -1,4 +1,4 @@
-import type { AllocationDto } from '@heartwood/shared';
+import type { AllocationDto } from '../../inventory';
 import {
   allocationFormProblem,
   conditionProblem,

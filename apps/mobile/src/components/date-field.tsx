@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Modal, Platform, Pressable, Text, useColorScheme, View } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { dateFromIso, formatLongDate, isoFromDate } from '../utils/date';
+import { dateFromIso, formatLongDate, isoFromDate } from '@heartwood/shared';
 import { Button } from './button';
 
 interface Props {

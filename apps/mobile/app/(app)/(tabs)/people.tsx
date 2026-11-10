@@ -3,11 +3,7 @@ import { useRouter } from 'expo-router';
 import { Button } from '../../../src/components/button';
 import { QueryState } from '../../../src/components/query-state';
 import { useBeneficiaries } from '../../../src/features/inventory/api';
-import {
-  beneficiarySubtitle,
-  contingencyLabel,
-  contingencyQuestion,
-} from '../../../src/features/inventory/labels';
+import { beneficiarySubtitle, contingencyLabel, contingencyQuestion } from '@heartwood/shared';
 
 const PeopleScreen = () => {
   const router = useRouter();

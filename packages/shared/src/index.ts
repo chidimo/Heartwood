@@ -1,3 +1,6 @@
 export * from './asset-types';
 export * from './auth';
 export * from './inventory';
+export * from './client/allocation-form';
+export * from './client/labels';
+export * from './client/dates';

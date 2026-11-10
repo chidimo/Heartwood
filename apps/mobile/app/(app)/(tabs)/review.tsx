@@ -1,10 +1,14 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { InventoryIssue, InventoryReport } from '@heartwood/shared';
+import {
+  type InventoryIssue,
+  type InventoryReport,
+  SEVERITY_LABELS,
+  SEVERITY_ORDER,
+} from '@heartwood/shared';
 import { Button } from '../../../src/components/button';
 import { QueryState } from '../../../src/components/query-state';
 import { useReport } from '../../../src/features/inventory/api';
-import { SEVERITY_LABELS, SEVERITY_ORDER } from '../../../src/features/inventory/labels';
 import { cn } from '../../../src/utils/cn';
 
 const SEVERITY_STYLES: Record<InventoryIssue['severity'], string> = {

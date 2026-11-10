@@ -6,7 +6,7 @@ import {
   type GiftCondition,
   type IfUnmetPlan,
   type ResiduaryEntry,
-} from '@heartwood/shared';
+} from '../inventory';
 
 // Form state for splitting an asset (or the residuary) between beneficiaries. Percentages are typed as
 // text, so parsing and validation live here rather than in the screens.

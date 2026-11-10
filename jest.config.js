@@ -3,9 +3,12 @@ module.exports = {
   displayName: 'backend',
   testEnvironment: 'node',
   rootDir: '.',
-  roots: ['<rootDir>/apps/backend/src'],
+  roots: ['<rootDir>/apps/backend/src', '<rootDir>/packages/shared/src'],
   globalSetup: '<rootDir>/apps/backend/src/test-utils/global-setup.ts',
-  testMatch: ['<rootDir>/apps/backend/src/**/*.test.ts'],
+  testMatch: [
+    '<rootDir>/apps/backend/src/**/*.test.ts',
+    '<rootDir>/packages/shared/src/**/*.test.ts',
+  ],
   // Resolve workspace packages straight to source so tests never run against a stale dist.
   moduleNameMapper: {
     '^@heartwood/database$': '<rootDir>/packages/database/src/index.ts',

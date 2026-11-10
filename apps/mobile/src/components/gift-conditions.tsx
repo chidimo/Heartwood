@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import type { BeneficiaryDto, ExecutorDto } from '@heartwood/shared';
 import {
-  conditionProblem,
-  newCondition,
-  type ConditionForm,
-} from '../features/inventory/allocation-form';
-import {
+  type BeneficiaryDto,
   CONDITION_KIND_OPTIONS,
-  EXECUTOR_KIND_OPTIONS,
-  IF_UNMET_OPTIONS,
+  type ConditionForm,
+  conditionProblem,
   conditionSummary,
-} from '../features/inventory/labels';
+  EXECUTOR_KIND_OPTIONS,
+  type ExecutorDto,
+  IF_UNMET_OPTIONS,
+  newCondition,
+} from '@heartwood/shared';
 import { Button } from './button';
 import { Segmented } from './segmented';
 import { Select } from './select';

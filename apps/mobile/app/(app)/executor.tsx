@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { ExecutorDto } from '@heartwood/shared';
+import { EXECUTOR_KIND_OPTIONS, type ExecutorDto } from '@heartwood/shared';
 import { errorMessage } from '../../src/api/client';
 import { Button } from '../../src/components/button';
 import { QueryState } from '../../src/components/query-state';
@@ -14,7 +14,6 @@ import {
   useExecutors,
   useUpdateExecutor,
 } from '../../src/features/inventory/api';
-import { EXECUTOR_KIND_OPTIONS } from '../../src/features/inventory/labels';
 import { notify } from '../../src/notifications/notify';
 import { confirmDestructive } from '../../src/utils/confirm';
 

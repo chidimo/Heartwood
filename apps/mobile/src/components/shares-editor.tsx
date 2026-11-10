@@ -1,7 +1,10 @@
 import { Text, TextInput, View } from 'react-native';
-import type { BeneficiaryDto } from '@heartwood/shared';
-import { formatTotal, totalHundredths } from '../features/inventory/allocation-form';
-import { beneficiarySubtitle } from '../features/inventory/labels';
+import {
+  type BeneficiaryDto,
+  beneficiarySubtitle,
+  formatTotal,
+  totalHundredths,
+} from '@heartwood/shared';
 import { cn } from '../utils/cn';
 
 interface Props {

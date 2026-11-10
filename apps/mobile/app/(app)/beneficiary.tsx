@@ -5,8 +5,14 @@ import {
   ageInYears,
   type BeneficiaryDto,
   type BeneficiaryKind,
+  type ContingencyChoice,
+  contingencyOptionsFor,
+  contingencyQuestion,
+  INSTITUTION_TYPE_OPTIONS,
   type InstitutionType,
+  KIND_OPTIONS,
   type Relationship,
+  RELATIONSHIP_OPTIONS,
 } from '@heartwood/shared';
 import { errorMessage } from '../../src/api/client';
 import { Button } from '../../src/components/button';
@@ -22,14 +28,6 @@ import {
   useDeleteBeneficiary,
   useUpdateBeneficiary,
 } from '../../src/features/inventory/api';
-import {
-  INSTITUTION_TYPE_OPTIONS,
-  KIND_OPTIONS,
-  RELATIONSHIP_OPTIONS,
-  contingencyOptionsFor,
-  contingencyQuestion,
-  type ContingencyChoice,
-} from '../../src/features/inventory/labels';
 import { notify } from '../../src/notifications/notify';
 import { confirmDestructive } from '../../src/utils/confirm';
 

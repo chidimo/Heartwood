@@ -1,7 +1,19 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
-import type { AllocationDto, AssetDto, BeneficiaryDto, ExecutorDto } from '@heartwood/shared';
+import {
+  type AllocationDto,
+  type AllocationForm,
+  allocationFormProblem,
+  type AllocationMode,
+  type AssetDto,
+  type BeneficiaryDto,
+  type ExecutorDto,
+  formFromAllocations,
+  recipientIds,
+  splitEvenly,
+  toAllocationEntries,
+} from '@heartwood/shared';
 import { errorMessage } from '../../../src/api/client';
 import { Button } from '../../../src/components/button';
 import { GiftConditions } from '../../../src/components/gift-conditions';
@@ -13,15 +25,6 @@ import { SharesEditor } from '../../../src/components/shares-editor';
 import { TextField } from '../../../src/components/text-field';
 import { useAssets } from '../../../src/features/assets/api';
 import { ASSET_TYPE_LABELS, formatValue } from '../../../src/features/assets/labels';
-import {
-  allocationFormProblem,
-  formFromAllocations,
-  recipientIds,
-  splitEvenly,
-  toAllocationEntries,
-  type AllocationForm,
-  type AllocationMode,
-} from '../../../src/features/inventory/allocation-form';
 import {
   useAllocations,
   useBeneficiaries,

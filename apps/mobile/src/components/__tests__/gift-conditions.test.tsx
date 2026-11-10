@@ -1,6 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import type { BeneficiaryDto, ExecutorDto } from '@heartwood/shared';
-import { newCondition, type ConditionForm } from '../../features/inventory/allocation-form';
+import {
+  type BeneficiaryDto,
+  type ConditionForm,
+  type ExecutorDto,
+  newCondition,
+} from '@heartwood/shared';
 import { GiftConditions } from '../gift-conditions';
 
 const person = (id: string, name: string): BeneficiaryDto => ({

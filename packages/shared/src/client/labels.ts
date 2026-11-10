@@ -8,7 +8,7 @@ import {
   type IfUnmetPlan,
   type InventoryIssue,
   type Relationship,
-} from '@heartwood/shared';
+} from '../inventory';
 
 /** The form's "not decided" choice stands in for a null plan. */
 export type ContingencyChoice = ContingencyPlan | 'unset';

@@ -1,4 +1,4 @@
-import { INSTITUTION_TYPES, RELATIONSHIPS } from '@heartwood/shared';
+import { INSTITUTION_TYPES, RELATIONSHIPS } from '../../inventory';
 import {
   conditionSummary,
   INSTITUTION_TYPE_LABELS,

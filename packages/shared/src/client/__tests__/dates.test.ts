@@ -1,4 +1,10 @@
-import { dateFromIso, formatDateInput, formatLongDate, isoFromDate, parseDateInput } from '../date';
+import {
+  dateFromIso,
+  formatDateInput,
+  formatLongDate,
+  isoFromDate,
+  parseDateInput,
+} from '../dates';
 
 describe('parseDateInput', () => {
   it.each([
