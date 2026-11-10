@@ -54,12 +54,28 @@ Checklist. One item at a time; commit each. Tests are written with the code, not
 
 A beneficiary is a person or an organisation. An organisation has a type (church, mosque, charity, school, other), no relationship to the testator, and no "pass it to their children" option.
 
-- [x] Migration `add_beneficiary_kind` (data-preserving down; DB checks keep the fields consistent and forbid the children plan for organisations)
+- [x] Organisation fields in the beneficiary table (DB checks keep person and organisation fields consistent and forbid the children plan for organisations)
 - [x] Shared schema, service guards (kind never changes), report wording ("if this organisation no longer exists"); 13 backend tests including direct-insert constraint checks. 70 backend tests pass (verified 2026-11-10)
 - [x] Mobile: person/organisation toggle, type dropdown, contingency options that fit the kind, subtitles in lists and share editors; 75 mobile tests pass. Verified in the iOS Simulator: added "Grace Chapel" as a church, the "children" option is absent, the list shows its type
-- [x] 14 organisation types (church, mosque, other place of worship, religious mission or order, charity, foundation or trust, orphanage, school, university or college, hospital or clinic, community or town union, association or club, cooperative society, other). The list is closed on purpose: to add one, add it to `INSTITUTION_TYPES` in `packages/shared/src/inventory.ts`, give it a label in `apps/mobile/src/features/inventory/labels.ts` (a test fails until you do), and write a migration that widens `beneficiary_institution_type_check` (see `expand_institution_types`)
-- [x] Optional address on a beneficiary (person or organisation): free text up to 500 characters, migration `add_beneficiary_address`, API, mobile form field; 89 backend and 77 mobile tests pass (verified 2026-11-10; layout checked in the simulator)
+- [x] 14 organisation types (church, mosque, other place of worship, religious mission or order, charity, foundation or trust, orphanage, school, university or college, hospital or clinic, community or town union, association or club, cooperative society, other). The list is closed on purpose: to add one, add it to `INSTITUTION_TYPES` in `packages/shared/src/inventory.ts`, give it a label in `apps/mobile/src/features/inventory/labels.ts` (a test fails until you do), and write a migration that widens `beneficiary_institution_type_check` (edit the CREATE TABLE while nothing is deployed)
+- [x] Optional address on a beneficiary (person or organisation): free text up to 500 characters in the beneficiary table, API, mobile form field; 89 backend and 77 mobile tests pass (verified 2026-11-10; layout checked in the simulator)
 - [ ] Registration number and wording rules for gifts to organisations: waiting on Q17
+
+### Migrations consolidated (2026-11-10)
+
+Nothing is deployed, so the `ALTER TABLE` migrations were folded back into the migrations that create their tables: four remain (`create_account_and_refresh_token`, `create_asset`, `create_beneficiary_allocation_executor`, `create_audit_log`) and none contains `ALTER TABLE`. The rebuilt schema was diffed against the old one and matched, apart from two constraints merged into one. `executor` is now created before `allocation`, because a gift's condition references it. From the first deployment on, migrations are immutable again ([migrations standard](../standards/migrations.md) Rule 3).
+
+### Relationship
+
+- [x] A person's relationship is a fixed list of 19 values (wife, husband, son, daughter, stepchild, father, mother, brother, sister, grandchild, grandparent, uncle, aunt, nephew, niece, cousin, in-law, friend, other) in the database, shared schema and the app's dropdown. "Other" requires `relationship_other` (the testator's own words), and only "other" may have it: enforced by the service and by a database check (verified with direct-insert tests, 2026-11-10)
+
+### Conditional gifts (see [the plan](2026-11-10-conditional-gifts.md))
+
+- [x] v1 scope, as agreed: a minimum age or free text, each with a holder (an executor or lawyer) and an "if unmet" plan (share among the others, a named person, or the residuary). A condition lives on one gift (per gift, not per person), on shares and on specific bequests. Not on residuary shares yet
+- [x] Optional date of birth on a person, chosen with a native date picker (`DateField`: spinner sheet on iOS, system dialog on Android, typed fallback on web) and shown with the computed age; used only for age checks. Verified in the iOS Simulator 2026-11-10; the Android dialog is covered by tests only
+- [x] Review warns when an age condition can't be checked (no date of birth) and when someone under 18 would receive a gift outright
+- [x] Executor and lawyer screens (list, add, edit, remove), reached from the Review tab; one holding a gift can't be removed
+- [x] Mobile condition editor under the share editor. 163 backend and 121 mobile tests; verified in the iOS Simulator 2026-11-10 (edit a saved condition, add one with live validation, save: two conditional gifts in the database, new review warnings)
 
 ### Dev seed
 

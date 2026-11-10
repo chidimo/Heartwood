@@ -17,6 +17,11 @@ const AppLayout = () => {
       <Stack.Screen name="asset/[id]" options={{ title: 'Asset' }} />
       <Stack.Screen name="beneficiary" options={{ title: 'Beneficiary', presentation: 'modal' }} />
       <Stack.Screen name="residuary" options={{ title: 'Everything else' }} />
+      <Stack.Screen name="executors" options={{ title: 'Executor and lawyer' }} />
+      <Stack.Screen
+        name="executor"
+        options={{ title: 'Executor or lawyer', presentation: 'modal' }}
+      />
     </Stack>
   );
 };

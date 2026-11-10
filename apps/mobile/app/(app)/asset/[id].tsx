@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
-import type { AllocationDto, AssetDto, BeneficiaryDto } from '@heartwood/shared';
+import type { AllocationDto, AssetDto, BeneficiaryDto, ExecutorDto } from '@heartwood/shared';
 import { errorMessage } from '../../../src/api/client';
 import { Button } from '../../../src/components/button';
+import { GiftConditions } from '../../../src/components/gift-conditions';
 import { QueryState } from '../../../src/components/query-state';
 import { Screen } from '../../../src/components/screen';
 import { Segmented } from '../../../src/components/segmented';
@@ -15,6 +16,7 @@ import { ASSET_TYPE_LABELS, formatValue } from '../../../src/features/assets/lab
 import {
   allocationFormProblem,
   formFromAllocations,
+  recipientIds,
   splitEvenly,
   toAllocationEntries,
   type AllocationForm,
@@ -24,6 +26,7 @@ import {
   useAllocations,
   useBeneficiaries,
   useDeleteAsset,
+  useExecutors,
   useReplaceAllocations,
 } from '../../../src/features/inventory/api';
 import { notify } from '../../../src/notifications/notify';
@@ -76,10 +79,12 @@ const BequestFields = ({ beneficiaries, form, onChange }: FieldsProps) => (
 interface EditorProps {
   asset: AssetDto;
   beneficiaries: BeneficiaryDto[];
+  executors: ExecutorDto[];
   current: AllocationDto[];
 }
 
-const AllocationEditor = ({ asset, beneficiaries, current }: EditorProps) => {
+const AllocationEditor = ({ asset, beneficiaries, executors, current }: EditorProps) => {
+  const router = useRouter();
   const save = useReplaceAllocations(asset.id);
   const [form, setForm] = useState<AllocationForm>(() => formFromAllocations(current));
 
@@ -105,6 +110,16 @@ const AllocationEditor = ({ asset, beneficiaries, current }: EditorProps) => {
       {form.mode === 'bequest' && (
         <BequestFields beneficiaries={beneficiaries} form={form} onChange={setForm} />
       )}
+      <GiftConditions
+        recipients={recipientIds(form)
+          .map(id => beneficiaries.find(b => b.id === id))
+          .filter((b): b is BeneficiaryDto => b !== undefined)}
+        beneficiaries={beneficiaries}
+        executors={executors}
+        conditions={form.conditions}
+        onChange={conditions => setForm({ ...form, conditions })}
+        onAddExecutor={() => router.push('/executor')}
+      />
       {problem && <Text className="text-sm text-danger">{problem}</Text>}
       {!problem && nothingChosen && (
         <Text className="text-sm text-ink/60 dark:text-white/60">
@@ -130,6 +145,7 @@ const AssetAllocations = ({
   beneficiaries: BeneficiaryDto[];
 }) => {
   const allocations = useAllocations(asset.id);
+  const executors = useExecutors();
 
   if (beneficiaries.length === 0) {
     return (
@@ -145,13 +161,18 @@ const AssetAllocations = ({
   return (
     <QueryState query={allocations}>
       {current => (
-        // key re-initialises the editor once the saved allocation has loaded.
-        <AllocationEditor
-          key={JSON.stringify(current)}
-          asset={asset}
-          beneficiaries={beneficiaries}
-          current={current}
-        />
+        <QueryState query={executors}>
+          {holders => (
+            // key re-initialises the editor once the saved allocation has loaded.
+            <AllocationEditor
+              key={JSON.stringify(current)}
+              asset={asset}
+              beneficiaries={beneficiaries}
+              executors={holders}
+              current={current}
+            />
+          )}
+        </QueryState>
       )}
     </QueryState>
   );

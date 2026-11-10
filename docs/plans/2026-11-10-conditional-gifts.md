@@ -2,7 +2,7 @@
 
 Created: 2026-11-10
 
-Status: Planning — nothing built. Needs decisions (below) and legal input (Q18) before the checklist starts.
+Status: In progress — v1 built and verified (2026-11-10). Waiting on Q18 (what is enforceable) before offering more; date-of-birth (Q19) and per-gift placement are built on the proposals below, not on answers.
 
 Owner: Chidi Orji <orjichidi95@gmail.com>
 
@@ -52,9 +52,11 @@ Validation rules to add, in the same style as the existing ones:
 
 ## Checklist (proposed, not started)
 
-- [ ] Get Q18 answered (or agree an interim working assumption with the lawyer)
-- [ ] Migration: condition columns (or a `gift_condition` table) with DB checks; optional `date_of_birth` on beneficiary (Q19)
-- [ ] Shared schema and `allocationProblem` extension; API accepts a condition per entry
-- [ ] Review rules above, with tests including direct-insert constraint checks
-- [ ] Mobile: condition editor in the allocation screen (kind, age or text, if unmet, holder); Review issues name the gift
+- [ ] Get Q18 answered (or agree an interim working assumption with the lawyer). v1 offers only a minimum age and free text, always with a holder and an "if unmet" plan, so nothing here depends on a ruling that conduct conditions are enforceable
+- [x] Condition columns on `allocation` with an all-or-nothing DB check; optional `date_of_birth` on beneficiary (Q19 working assumption)
+- [x] Shared schema; API accepts a condition per entry; holder and fallback must be the owner's own; a gift can't fall back to its recipient
+- [x] Review rules: an age condition without a date of birth (`gift_age_unverifiable`) and a gift to someone under 18 with no condition (`gift_to_minor_unconditional`); tests include direct-insert constraint checks. `gift_condition_incomplete` is impossible by construction (the schema and the database both require a holder and an "if unmet" plan)
+- [x] Mobile: condition editor in the allocation screen (kind, age or text, if unmet, holder); Review issues name the gift
+- [ ] Conditions on residuary shares
+- [ ] "Apply to all of this person's gifts" shortcut
 - [ ] Draft will export wording for conditional gifts (blocked on the draft export itself and on Q18)

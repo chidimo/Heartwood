@@ -10,6 +10,7 @@ import {
 } from '@heartwood/shared';
 import { errorMessage } from '../../src/api/client';
 import { Button } from '../../src/components/button';
+import { DateField } from '../../src/components/date-field';
 import { QueryState } from '../../src/components/query-state';
 import { Screen } from '../../src/components/screen';
 import { Segmented } from '../../src/components/segmented';
@@ -31,7 +32,6 @@ import {
 } from '../../src/features/inventory/labels';
 import { notify } from '../../src/notifications/notify';
 import { confirmDestructive } from '../../src/utils/confirm';
-import { formatDateInput, parseDateInput } from '../../src/utils/date';
 
 interface FormProps {
   /** The beneficiary being edited, or null to add a new one. */
@@ -50,9 +50,7 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
   const [name, setName] = useState(existing?.name ?? '');
   const [relationship, setRelationship] = useState<string>(existing?.relationship ?? '');
   const [relationshipOther, setRelationshipOther] = useState(existing?.relationshipOther ?? '');
-  const [dobText, setDobText] = useState(
-    existing?.dateOfBirth ? formatDateInput(existing.dateOfBirth) : ''
-  );
+  const [dateOfBirth, setDateOfBirth] = useState<string | null>(existing?.dateOfBirth ?? null);
   const [institutionType, setInstitutionType] = useState<InstitutionType>(
     existing?.institutionType ?? 'church'
   );
@@ -63,10 +61,6 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
 
   const isOrganisation = kind === 'institution';
   const needsOther = !isOrganisation && relationship === 'other';
-
-  // Date of birth is optional; it only lets the app check an age condition.
-  const dateOfBirth = dobText.trim() ? parseDateInput(dobText) : null;
-  const dobInvalid = dobText.trim() !== '' && dateOfBirth === null;
 
   // "Pass it to their children" doesn't apply to an organisation.
   const handleKindChange = (next: BeneficiaryKind) => {
@@ -163,18 +157,17 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
               hint="For example: godmother, mentor, business partner."
             />
           )}
-          <TextField
+          <DateField
             label="Date of birth (optional)"
-            value={dobText}
-            onChangeText={setDobText}
-            keyboardType="numbers-and-punctuation"
-            placeholder="DD/MM/YYYY"
-            error={dobInvalid ? 'Use DD/MM/YYYY, for example 15/06/2012.' : null}
+            value={dateOfBirth}
+            onChange={setDateOfBirth}
+            initialDate="2000-01-01"
             hint={
               dateOfBirth
                 ? `Age ${ageInYears(dateOfBirth)}. Only used to check age conditions on a gift.`
                 : 'Only used to check age conditions on a gift.'
             }
+            testID="date-of-birth"
           />
         </>
       )}

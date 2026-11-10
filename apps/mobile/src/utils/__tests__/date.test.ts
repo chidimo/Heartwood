@@ -1,4 +1,4 @@
-import { formatDateInput, parseDateInput } from '../date';
+import { dateFromIso, formatDateInput, formatLongDate, isoFromDate, parseDateInput } from '../date';
 
 describe('parseDateInput', () => {
   it.each([
@@ -25,5 +25,26 @@ describe('formatDateInput', () => {
 
   it('round-trips with parseDateInput', () => {
     expect(parseDateInput(formatDateInput('1999-12-31'))).toBe('1999-12-31');
+  });
+});
+
+describe('isoFromDate and dateFromIso', () => {
+  it('round-trip without shifting the day, in any timezone', () => {
+    for (const iso of ['2012-06-15', '2024-02-29', '1999-12-31', '2000-01-01']) {
+      expect(isoFromDate(dateFromIso(iso))).toBe(iso);
+    }
+  });
+
+  it('read the date a picker returns by its local calendar day', () => {
+    expect(isoFromDate(new Date(2012, 5, 15, 23, 59))).toBe('2012-06-15');
+    expect(isoFromDate(new Date(2012, 5, 15, 0, 1))).toBe('2012-06-15');
+  });
+});
+
+describe('formatLongDate', () => {
+  it('writes the day, the month in words and the year', () => {
+    expect(formatLongDate('2012-06-15')).toBe('15 June 2012');
+    expect(formatLongDate('2000-01-01')).toBe('1 January 2000');
+    expect(formatLongDate('1999-12-31')).toBe('31 December 1999');
   });
 });

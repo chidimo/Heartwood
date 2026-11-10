@@ -5,6 +5,9 @@ import type {
   BeneficiaryDto,
   BeneficiaryInput,
   BeneficiaryUpdate,
+  ExecutorDto,
+  ExecutorInput,
+  ExecutorUpdate,
   InventoryReport,
   ResiduaryEntry,
 } from '@heartwood/shared';
@@ -13,6 +16,7 @@ import { assetKeys } from '../assets/api';
 
 export const inventoryKeys = {
   beneficiaries: ['beneficiaries'] as const,
+  executors: ['executors'] as const,
   allocations: (assetId: string) => ['allocations', assetId] as const,
   residuary: ['residuary'] as const,
   report: ['report'] as const,
@@ -25,6 +29,12 @@ export const useBeneficiaries = () =>
   useQuery({
     queryKey: inventoryKeys.beneficiaries,
     queryFn: () => apiFetch<BeneficiaryDto[]>('/beneficiaries'),
+  });
+
+export const useExecutors = () =>
+  useQuery({
+    queryKey: inventoryKeys.executors,
+    queryFn: () => apiFetch<ExecutorDto[]>('/executors'),
   });
 
 export const useAllocations = (assetId: string) =>
@@ -112,3 +122,29 @@ export const useReplaceResiduary = () => {
 };
 
 export { assetKeys };
+
+export const useCreateExecutor = () => {
+  const refresh = useRefreshAfterWrite();
+  return useMutation({
+    mutationFn: (input: Partial<ExecutorInput> & Pick<ExecutorInput, 'kind' | 'name'>) =>
+      postJson<ExecutorDto>('/executors', input),
+    onSuccess: refresh,
+  });
+};
+
+export const useUpdateExecutor = (id: string) => {
+  const refresh = useRefreshAfterWrite();
+  return useMutation({
+    mutationFn: (input: ExecutorUpdate) =>
+      apiFetch<ExecutorDto>(`/executors/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+    onSuccess: refresh,
+  });
+};
+
+export const useDeleteExecutor = (id: string) => {
+  const refresh = useRefreshAfterWrite();
+  return useMutation({
+    mutationFn: () => apiFetch<void>(`/executors/${id}`, { method: 'DELETE' }),
+    onSuccess: refresh,
+  });
+};

@@ -214,6 +214,18 @@ asset type started as chips and was changed on feedback.
 **How to apply it:** pass `options` as `{value, label}` pairs derived from the shared constant (for example
 `ASSET_TYPES` and its labels), so the list can't drift from what the server accepts.
 
+## Rule 19 — Dates are picked with `DateField`, never typed
+
+Use `DateField` (`src/components/date-field.tsx`): a field that opens the phone's own picker, a spinner in a sheet on iOS and the system dialog on Android, and reports "YYYY-MM-DD". It starts the picker on the current value or an
+`initialDate`, bounds it to 1900 and the latest allowed day, and only commits on Done. The web build has a typed
+fallback (`date-field.web.tsx`, DD/MM/YYYY).
+
+**Why:** a typed "15/6/12" is ambiguous, and on a phone it is one more place for a keystroke to go wrong. A picker can't produce a
+date that doesn't exist. Dates are read and written in local time (`isoFromDate`, `dateFromIso` in `utils/date.ts`)
+so the day someone picks never shifts across a timezone; the date tests run under two extreme timezones for that reason.
+
+**How to apply it:** send the API the "YYYY-MM-DD" string as it is. Never build a date from a string with `new Date("2012-06-15")` (that is UTC midnight, which is the previous day in some timezones): use `dateFromIso`.
+
 ## What we deliberately did not copy
 
 - **Direct AsyncStorage use** (mobile-flashcards' `work-with-storage.ts` wraps it but stores everything there,

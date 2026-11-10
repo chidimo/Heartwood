@@ -10,14 +10,25 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.heartwood.app",
-      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.heartwood.app",
       "predictiveBackGestureEnabled": false
     },
-    "web": { "bundler": "metro" },
-    "plugins": ["expo-router", "expo-secure-store", "expo-status-bar"],
-    "experiments": { "typedRoutes": true }
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-status-bar",
+      "@react-native-community/datetimepicker"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

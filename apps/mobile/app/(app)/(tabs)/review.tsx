@@ -100,6 +100,18 @@ const ReviewScreen = () => {
           testID="open-residuary"
         />
       </View>
+      <View className="gap-2">
+        <Text className="text-lg font-semibold text-ink dark:text-white">Executor and lawyer</Text>
+        <Text className="text-ink/70 dark:text-white/70">
+          Who carries out your will, and who can hold a gift until a condition is met.
+        </Text>
+        <Button
+          label="Manage executor and lawyer"
+          variant="secondary"
+          onPress={() => router.push('/executors')}
+          testID="open-executors"
+        />
+      </View>
     </ScrollView>
   );
 };

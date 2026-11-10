@@ -96,6 +96,12 @@ database's schema out of sync with the file in version control.
   (drop what it created, delete its `schema_migrations` row) before
   re-running with the new content. This isn't automatic.
 
+**Before the first deployment** there is no shared database for this rule to protect. Until then, migrations may be
+consolidated: fold an `ALTER TABLE` back into the migration that creates its table, rebuild a throwaway database from
+the result, and diff its schema (columns, constraints and indexes from the catalog) against the old one before
+deleting anything. Heartwood did this on 2026-11-10 (four migrations remain). From the first deployment on, this
+exception ends: write a new migration for every change.
+
 ## 4. Style
 
 - One numbered pair per change: `<timestamp>_<description>.up.sql` and the
