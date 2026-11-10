@@ -49,7 +49,11 @@ export const Select = <T extends string>({ label, value, options, onChange, test
           className="flex-1 bg-black/40"
           onPress={handleClose}
         />
-        <SafeAreaView edges={['bottom']} className="rounded-t-2xl bg-white dark:bg-primary-900">
+        <SafeAreaView
+          edges={['bottom']}
+          style={{ maxHeight: '70%' }}
+          className="rounded-t-2xl bg-white dark:bg-primary-900"
+        >
           <Text className="px-6 pb-2 pt-4 text-sm font-medium text-ink/60 dark:text-white/60">
             {label}
           </Text>

@@ -68,7 +68,24 @@ const contingencyConsistent = (v: {
 export const BENEFICIARY_KINDS = ['person', 'institution'] as const;
 export type BeneficiaryKind = (typeof BENEFICIARY_KINDS)[number];
 
-export const INSTITUTION_TYPES = ['church', 'mosque', 'charity', 'school', 'other'] as const;
+// Closed list. To add a type: add it here, give it a label in apps/mobile (labels.ts), and write a
+// migration that widens beneficiary_institution_type_check. "other" stays last.
+export const INSTITUTION_TYPES = [
+  'church',
+  'mosque',
+  'place_of_worship',
+  'mission',
+  'charity',
+  'foundation',
+  'orphanage',
+  'school',
+  'university',
+  'hospital',
+  'community',
+  'association',
+  'cooperative',
+  'other',
+] as const;
 export type InstitutionType = (typeof INSTITUTION_TYPES)[number];
 
 const plainOptionalText = (max: number) =>

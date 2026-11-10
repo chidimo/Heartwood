@@ -1,4 +1,7 @@
+import { INSTITUTION_TYPES } from '@heartwood/shared';
 import {
+  INSTITUTION_TYPE_LABELS,
+  INSTITUTION_TYPE_OPTIONS,
   beneficiarySubtitle,
   contingencyLabel,
   contingencyOptionsFor,
@@ -14,9 +17,30 @@ describe('beneficiarySubtitle', () => {
 
   it('shows what kind of organisation it is', () => {
     expect(beneficiarySubtitle({ relationship: null, institutionType: 'church' })).toBe('Church');
+    expect(beneficiarySubtitle({ relationship: null, institutionType: 'orphanage' })).toBe(
+      'Orphanage'
+    );
     expect(beneficiarySubtitle({ relationship: null, institutionType: 'other' })).toBe(
       'Other organisation'
     );
+  });
+});
+
+describe('INSTITUTION_TYPE_OPTIONS', () => {
+  it('lists every type the server accepts, orphanage included, with "other" last', () => {
+    const values = INSTITUTION_TYPE_OPTIONS.map(o => o.value);
+    expect(values).toEqual([...INSTITUTION_TYPES]);
+    expect(values).toContain('orphanage');
+    expect(values).toHaveLength(14);
+    expect(values[values.length - 1]).toBe('other');
+  });
+});
+
+describe('INSTITUTION_TYPE_LABELS', () => {
+  it('has a distinct, non-empty label for every type', () => {
+    const labels = INSTITUTION_TYPES.map(t => INSTITUTION_TYPE_LABELS[t]);
+    expect(labels.every(Boolean)).toBe(true);
+    expect(new Set(labels).size).toBe(INSTITUTION_TYPES.length);
   });
 });
 

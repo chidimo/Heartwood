@@ -57,6 +57,7 @@ A beneficiary is a person or an organisation. An organisation has a type (church
 - [x] Migration `add_beneficiary_kind` (data-preserving down; DB checks keep the fields consistent and forbid the children plan for organisations)
 - [x] Shared schema, service guards (kind never changes), report wording ("if this organisation no longer exists"); 13 backend tests including direct-insert constraint checks. 70 backend tests pass (verified 2026-11-10)
 - [x] Mobile: person/organisation toggle, type dropdown, contingency options that fit the kind, subtitles in lists and share editors; 75 mobile tests pass. Verified in the iOS Simulator: added "Grace Chapel" as a church, the "children" option is absent, the list shows its type
+- [x] 14 organisation types (church, mosque, other place of worship, religious mission or order, charity, foundation or trust, orphanage, school, university or college, hospital or clinic, community or town union, association or club, cooperative society, other). The list is closed on purpose: to add one, add it to `INSTITUTION_TYPES` in `packages/shared/src/inventory.ts`, give it a label in `apps/mobile/src/features/inventory/labels.ts` (a test fails until you do), and write a migration that widens `beneficiary_institution_type_check` (see `expand_institution_types`)
 - [ ] Registration number and wording rules for gifts to organisations: waiting on Q17
 
 ### Clients

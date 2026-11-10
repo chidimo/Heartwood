@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { INSTITUTION_TYPES } from '@heartwood/shared';
 import { createTestApp, registerTestUser } from '../test-utils/test-app';
 import { useTestDb } from '../test-utils/useTestDb';
 
@@ -246,6 +247,19 @@ describe('inventory', () => {
         relationship: null,
         name: 'Grace Chapel, Ikeja',
       });
+    });
+
+    it.each(INSTITUTION_TYPES)('accepts %s as an organisation type', async institutionType => {
+      const api = as((await registerTestUser(app)).bearer);
+      const res = await api.post('/api/beneficiaries', { ...church, institutionType });
+      expect(res.status).toBe(201);
+      expect(res.body.institutionType).toBe(institutionType);
+    });
+
+    it('rejects an organisation type we do not have', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const res = await api.post('/api/beneficiaries', { ...church, institutionType: 'casino' });
+      expect(res.status).toBe(400);
     });
 
     it('still creates a person by default, with no type', async () => {

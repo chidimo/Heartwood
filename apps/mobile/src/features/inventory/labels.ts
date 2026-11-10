@@ -1,9 +1,10 @@
-import type {
-  BeneficiaryDto,
-  BeneficiaryKind,
-  ContingencyPlan,
-  InstitutionType,
-  InventoryIssue,
+import {
+  INSTITUTION_TYPES,
+  type BeneficiaryDto,
+  type BeneficiaryKind,
+  type ContingencyPlan,
+  type InstitutionType,
+  type InventoryIssue,
 } from '@heartwood/shared';
 
 /** The form's "not decided" choice stands in for a null plan. */
@@ -17,15 +18,24 @@ export const KIND_OPTIONS = [
 export const INSTITUTION_TYPE_LABELS: Record<InstitutionType, string> = {
   church: 'Church',
   mosque: 'Mosque',
+  place_of_worship: 'Other place of worship',
+  mission: 'Religious mission or order',
   charity: 'Charity',
-  school: 'School',
+  foundation: 'Foundation or trust',
   orphanage: 'Orphanage',
+  school: 'School',
+  university: 'University or college',
+  hospital: 'Hospital or clinic',
+  community: 'Community or town union',
+  association: 'Association or club',
+  cooperative: 'Cooperative society',
   other: 'Other organisation',
 };
 
-export const INSTITUTION_TYPE_OPTIONS = (
-  Object.keys(INSTITUTION_TYPE_LABELS) as InstitutionType[]
-).map(value => ({ value, label: INSTITUTION_TYPE_LABELS[value] }));
+export const INSTITUTION_TYPE_OPTIONS = INSTITUTION_TYPES.map(value => ({
+  value,
+  label: INSTITUTION_TYPE_LABELS[value],
+}));
 
 const ALL_CONTINGENCY_OPTIONS = [
   { value: 'unset', label: 'Not decided yet' },
