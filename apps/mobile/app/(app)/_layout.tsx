@@ -1,14 +1,8 @@
-import { useColorScheme } from 'react-native';
 import { Stack } from 'expo-router';
-
-// The native header doesn't read NativeWind's dark: classes, so it follows the system scheme here.
-const COLORS = {
-  light: { background: '#ffffff', text: '#14211a' },
-  dark: { background: '#14211a', text: '#ffffff' },
-};
+import { useNavColors } from '../../src/theme';
 
 const AppLayout = () => {
-  const colors = COLORS[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const colors = useNavColors();
   return (
     <Stack
       screenOptions={{
@@ -17,8 +11,11 @@ const AppLayout = () => {
         headerTitleStyle: { color: colors.text },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Your assets' }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="add-asset" options={{ title: 'Add an asset', presentation: 'modal' }} />
+      <Stack.Screen name="asset/[id]" options={{ title: 'Asset' }} />
+      <Stack.Screen name="beneficiary" options={{ title: 'Beneficiary', presentation: 'modal' }} />
+      <Stack.Screen name="residuary" options={{ title: 'Everything else' }} />
     </Stack>
   );
 };
