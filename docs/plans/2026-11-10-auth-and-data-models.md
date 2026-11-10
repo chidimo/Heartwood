@@ -87,3 +87,5 @@ Mobile inventory screens (branch `feature/mobile-inventory`, verified in the iOS
 
 - [x] Mobile: register, sign-in, sign-out, asset list and add (type is a `Select` dropdown). Verified in the iOS Simulator against a real backend and database on 2026-11-10: register 201, login 200, asset create 201 with its audit row, the account-number guard shows a toast, a stale session returns to sign-in (401 on `/me` then on refresh), the dark header and inline password validation render. 34 mobile tests pass. Not covered: sign-out, token refresh on a live expiry, Android.
 - [ ] Web: sign-in, asset list and add
+
+- [x] Mobile: tapping an asset opens a read-only distribution view (who gets what, percentage or bequest, condition sentences) with an Edit button to the allocation editor (`asset/[id]/edit`) and Remove. Verified in the iOS Simulator 2026-11-10; 65 mobile tests pass.

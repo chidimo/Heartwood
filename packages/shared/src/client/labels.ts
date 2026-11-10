@@ -151,11 +151,12 @@ const ifUnmetSentence = (plan: IfUnmetPlan, fallbackName: string): string => {
   return 'it is shared among my other beneficiaries';
 };
 
+/** Either the form's condition (text fields) or a saved one (numbers), so one function reads both. */
 interface ConditionLike {
   kind: ConditionKind;
-  minAge: string | number;
-  days: string | number;
-  text: string | null;
+  minAge?: string | number;
+  days?: string | number;
+  text?: string | null;
   ifUnmet: IfUnmetPlan;
 }
 

@@ -10,31 +10,29 @@ import {
   type AssetDto,
   type BeneficiaryDto,
   type ExecutorDto,
-  formatValue,
   formFromAllocations,
   recipientIds,
   splitEvenly,
   toAllocationEntries,
 } from '@heartwood/shared';
-import { errorMessage } from '../../../src/api/client';
-import { Button } from '../../../src/components/button';
-import { GiftConditions } from '../../../src/components/gift-conditions';
-import { QueryState } from '../../../src/components/query-state';
-import { Screen } from '../../../src/components/screen';
-import { Segmented } from '../../../src/components/segmented';
-import { Select } from '../../../src/components/select';
-import { SharesEditor } from '../../../src/components/shares-editor';
-import { TextField } from '../../../src/components/text-field';
-import { useAssets } from '../../../src/features/assets/api';
+import { errorMessage } from '../../../../src/api/client';
+import { Button } from '../../../../src/components/button';
+import { GiftConditions } from '../../../../src/components/gift-conditions';
+import { QueryState } from '../../../../src/components/query-state';
+import { Screen } from '../../../../src/components/screen';
+import { Segmented } from '../../../../src/components/segmented';
+import { Select } from '../../../../src/components/select';
+import { SharesEditor } from '../../../../src/components/shares-editor';
+import { TextField } from '../../../../src/components/text-field';
+import { useAssets } from '../../../../src/features/assets/api';
 import {
   useAllocations,
   useBeneficiaries,
-  useDeleteAsset,
   useExecutors,
   useReplaceAllocations,
-} from '../../../src/features/inventory/api';
-import { notify } from '../../../src/notifications/notify';
-import { confirmDestructive } from '../../../src/utils/confirm';
+} from '../../../../src/features/inventory/api';
+import { notify } from '../../../../src/notifications/notify';
+import { confirmDestructive } from '../../../../src/utils/confirm';
 
 const MODES = [
   { value: 'split', label: 'Split by percent' },
@@ -97,7 +95,10 @@ const AllocationEditor = ({ asset, beneficiaries, executors, current }: EditorPr
 
   const handleSave = () =>
     save.mutate(toAllocationEntries(form), {
-      onSuccess: () => notify.success(nothingChosen ? 'Allocation cleared' : 'Allocation saved'),
+      onSuccess: () => {
+        notify.success(nothingChosen ? 'Allocation cleared' : 'Allocation saved');
+        router.back();
+      },
       onError: error => notify.error("Couldn't save", errorMessage(error, 'Try again.')),
     });
 
@@ -182,25 +183,8 @@ const AssetAllocations = ({
   );
 };
 
-const AssetBody = ({ asset }: { asset: AssetDto }) => {
-  const router = useRouter();
+const AssetEditBody = ({ asset }: { asset: AssetDto }) => {
   const beneficiaries = useBeneficiaries();
-  const remove = useDeleteAsset(asset.id);
-
-  const handleDelete = () =>
-    confirmDestructive(
-      'Remove this asset?',
-      'It will be taken off your list, along with how you split it.',
-      'Remove',
-      () =>
-        remove.mutate(undefined, {
-          onSuccess: () => {
-            notify.success('Asset removed');
-            router.back();
-          },
-          onError: error => notify.error("Couldn't remove", errorMessage(error, 'Try again.')),
-        })
-    );
 
   return (
     <Screen>
@@ -209,21 +193,12 @@ const AssetBody = ({ asset }: { asset: AssetDto }) => {
           {ASSET_TYPE_LABELS[asset.type]}
         </Text>
         <Text className="text-xl font-semibold text-ink dark:text-white">{asset.description}</Text>
-        {asset.institution && (
-          <Text className="text-ink/70 dark:text-white/70">{asset.institution}</Text>
-        )}
-        <Text className="text-ink/70 dark:text-white/70">{formatValue(asset.roughValue)}</Text>
-        {asset.notes && <Text className="mt-2 text-ink/70 dark:text-white/70">{asset.notes}</Text>}
       </View>
 
       <Text className="mt-2 text-lg font-semibold text-ink dark:text-white">Who gets it?</Text>
       <QueryState query={beneficiaries}>
         {people => <AssetAllocations asset={asset} beneficiaries={people} />}
       </QueryState>
-
-      <Pressable onPress={handleDelete} accessibilityRole="button" className="mt-4">
-        <Text className="text-center text-danger">Remove this asset</Text>
-      </Pressable>
     </Screen>
   );
 };
@@ -232,7 +207,7 @@ const Gone = () => (
   <Text className="p-6 text-ink/70 dark:text-white/70">This asset is no longer on your list.</Text>
 );
 
-const AssetScreen = () => {
+const AssetEditScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const assets = useAssets();
 
@@ -241,9 +216,9 @@ const AssetScreen = () => {
       {list => {
         const asset = list.find(a => a.id === id);
         if (!asset) return <Gone />;
-        return <AssetBody asset={asset} />;
+        return <AssetEditBody asset={asset} />;
       }}
     </QueryState>
   );
 };
-export default AssetScreen;
+export default AssetEditScreen;

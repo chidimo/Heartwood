@@ -4,6 +4,8 @@ import {
   type BeneficiaryDto,
   CONDITION_KIND_OPTIONS,
   type ConditionForm,
+  conditionKindHint,
+  conditionNoteLabel,
   conditionProblem,
   conditionSummary,
   EXECUTOR_KIND_OPTIONS,
@@ -12,7 +14,6 @@ import {
   newCondition,
 } from '@heartwood/shared';
 import { Button } from './button';
-import { Segmented } from './segmented';
 import { Select } from './select';
 import { TextField } from './text-field';
 
@@ -52,6 +53,7 @@ const ConditionEditor = ({
   onAddExecutor,
 }: EditorProps) => {
   const problem = conditionProblem(value, person.id);
+  const hint = conditionKindHint(value.kind);
   const fallbackOptions = beneficiaries
     .filter(b => b.id !== person.id)
     .map(b => ({ value: b.id, label: b.name }));
@@ -61,11 +63,14 @@ const ConditionEditor = ({
       <Text className="text-base font-semibold text-ink dark:text-white">
         Condition for {person.name}
       </Text>
-      <Segmented
+      <Select
+        label="This gift is held back until"
         value={value.kind}
         options={CONDITION_KIND_OPTIONS}
         onChange={kind => onChange({ ...value, kind })}
+        testID="condition-kind"
       />
+      {hint && <Text className="text-xs text-ink/60 dark:text-white/60">{hint}</Text>}
       {value.kind === 'min_age' && (
         <TextField
           label="They receive it at age"
@@ -75,15 +80,21 @@ const ConditionEditor = ({
           placeholder="25"
         />
       )}
-      {value.kind === 'other' && (
+      {value.kind === 'survives' && (
         <TextField
-          label="What has to happen first?"
-          value={value.text}
-          onChangeText={text => onChange({ ...value, text })}
-          multiline
-          hint="For example: she finishes university. Your lawyer will check the wording."
+          label="Number of days they must outlive me"
+          value={value.days}
+          onChangeText={days => onChange({ ...value, days })}
+          keyboardType="number-pad"
+          placeholder="30"
         />
       )}
+      <TextField
+        label={conditionNoteLabel(value.kind)}
+        value={value.text}
+        onChangeText={text => onChange({ ...value, text })}
+        multiline
+      />
 
       {executors.length === 0 ? (
         <Pressable onPress={onAddExecutor} accessibilityRole="button">

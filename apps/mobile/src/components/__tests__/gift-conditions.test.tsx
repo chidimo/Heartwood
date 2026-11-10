@@ -109,4 +109,29 @@ describe('GiftConditions', () => {
     await fireEvent.press(screen.getByText(/Add an executor or lawyer first/));
     expect(onAddExecutor).toHaveBeenCalledTimes(1);
   });
+
+  it('a free-text condition needs its words before Done', async () => {
+    await setup({ conditions: { ada: { ...age25, kind: 'other', text: '' } } });
+    await fireEvent.press(screen.getByText('Edit'));
+    expect(screen.getByRole('button', { name: 'Done' }).props.accessibilityState.disabled).toBe(
+      true
+    );
+  });
+
+  it('a survive-me condition needs a number of days', async () => {
+    await setup({ conditions: { ada: { ...age25, kind: 'survives', days: '' } } });
+    await fireEvent.press(screen.getByText('Edit'));
+    expect(screen.getByRole('button', { name: 'Done' }).props.accessibilityState.disabled).toBe(
+      true
+    );
+  });
+
+  it('kinds with no number (marriage) are complete as soon as they are chosen', async () => {
+    await setup({ conditions: { ada: { ...age25, kind: 'marriage', minAge: '' } } });
+    expect(screen.getByText(/Only if they marry/)).toBeTruthy();
+    await fireEvent.press(screen.getByText('Edit'));
+    expect(
+      screen.getByRole('button', { name: 'Done' }).props.accessibilityState.disabled
+    ).toBeFalsy();
+  });
 });

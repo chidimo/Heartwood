@@ -2,7 +2,7 @@
 
 Created: 2026-11-10
 
-Status: In progress — v1 built and verified (2026-11-10). Waiting on Q18 (what is enforceable) before offering more; date-of-birth (Q19) and per-gift placement are built on the proposals below, not on answers.
+Status: In progress — v1 built and verified (2026-11-10). More kinds added 2026-11-10 (marriage, finish education, NYSC, outlive me by N days, free text). Marriage and conduct-style kinds carry real legal risk, so Q18 gates what stays; date-of-birth (Q19) and per-gift placement are built on the proposals below, not on answers.
 
 Owner: Chidi Orji <orjichidi95@gmail.com>
 
@@ -60,3 +60,9 @@ Validation rules to add, in the same style as the existing ones:
 - [ ] Conditions on residuary shares
 - [ ] "Apply to all of this person's gifts" shortcut
 - [ ] Draft will export wording for conditional gifts (blocked on the draft export itself and on Q18)
+
+## Condition kinds (added 2026-11-10)
+
+- [x] `min_age`, `marriage`, `education`, `nysc`, `survives` (days), `other` (free text). Each non-`other` kind also takes an optional note. Closed list in `CONDITION_KINDS`, enforced by a DB check and shared labels.
+- [ ] Lawyer to say which of these are enforceable and how to word them (Q18). Marriage and conduct conditions are the likeliest to be struck out.
+- [ ] Possible later kinds, not built: caring for a dependant or parent, qualifying in a profession, running the family business, having a first child, conduct (sobriety, religion).
