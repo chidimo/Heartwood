@@ -4,7 +4,7 @@ Helps ordinary people in Nigeria list what they own, say who should get it, and 
 
 The app is not what makes a transfer legal. A valid will is. Heartwood never holds assets: it holds an organised inventory and instructions, and a lawyer produces and carries out the will.
 
-**Status:** pre-build. Docs and standards are in place; the workspace itself is not yet scaffolded.
+**Status:** scaffolded, no product features yet. See [the roadmap](docs/roadmap.md).
 
 ## Where things are
 

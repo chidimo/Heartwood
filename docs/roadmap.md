@@ -17,8 +17,8 @@ Status key: ✅ done · 🟡 in progress · ⬜ not started
 ### 0. Foundation (in progress)
 
 1. ✅ Repo skeleton: `docs/` with roadmap, plans, standards and open questions; root config copied from Concord.
-2. ⬜ Stand up the workspace: `apps/backend`, `apps/web`, `packages/database`, `packages/shared`, mirroring Concord's
-   layout. Plan: not yet written. Stack is decided (Q0).
+2. ✅ Workspace stood up: `apps/backend`, `apps/web`, `packages/database`, `packages/shared`, mirroring Concord's
+   layout. See [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md).
 3. ⬜ Test and CI setup, copied from Concord's `docker-compose.test.yml`, Jest config and `test-backend` workflow.
 4. ⬜ Write the **security and data-minimisation standard** before the first asset model ships (Q9).
 
@@ -55,7 +55,8 @@ Not scheduled until the questions above are answered.
 
 ## All plans
 
-One row per doc in `docs/plans/`. None yet.
+One row per doc in `docs/plans/`.
 
-| Doc | Status | Notes |
-| --- | ------ | ----- |
+| Doc                                                                              | Status         | Notes                                                                                           |
+| -------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------- |
+| [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md) | 🟡 In progress | Scaffold built and verified; test DB, CI, security standard and a full `yarn dev` check remain. |

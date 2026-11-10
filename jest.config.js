@@ -22,7 +22,6 @@ module.exports = {
       {
         tsconfig: '<rootDir>/apps/backend/tsconfig.json',
         diagnostics: false,
-        isolatedModules: true,
       },
     ],
   },
