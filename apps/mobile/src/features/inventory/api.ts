@@ -53,9 +53,8 @@ const useRefreshAfterWrite = () => {
 export const useCreateBeneficiary = () => {
   const refresh = useRefreshAfterWrite();
   return useMutation({
-    mutationFn: (
-      input: Partial<BeneficiaryInput> & Pick<BeneficiaryInput, 'name' | 'relationship'>
-    ) => postJson<BeneficiaryDto>('/beneficiaries', input),
+    mutationFn: (input: Partial<BeneficiaryInput> & Pick<BeneficiaryInput, 'name'>) =>
+      postJson<BeneficiaryDto>('/beneficiaries', input),
     onSuccess: refresh,
   });
 };

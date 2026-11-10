@@ -1,15 +1,44 @@
 import {
   INSTITUTION_TYPES,
+  RELATIONSHIPS,
   type BeneficiaryDto,
   type BeneficiaryKind,
   type ContingencyPlan,
   type InstitutionType,
   type IfUnmetPlan,
   type InventoryIssue,
+  type Relationship,
 } from '@heartwood/shared';
 
 /** The form's "not decided" choice stands in for a null plan. */
 export type ContingencyChoice = ContingencyPlan | 'unset';
+
+export const RELATIONSHIP_LABELS: Record<Relationship, string> = {
+  wife: 'Wife',
+  husband: 'Husband',
+  son: 'Son',
+  daughter: 'Daughter',
+  stepchild: 'Stepchild',
+  father: 'Father',
+  mother: 'Mother',
+  brother: 'Brother',
+  sister: 'Sister',
+  grandchild: 'Grandchild',
+  grandparent: 'Grandparent',
+  uncle: 'Uncle',
+  aunt: 'Aunt',
+  nephew: 'Nephew',
+  niece: 'Niece',
+  cousin: 'Cousin',
+  in_law: 'In-law',
+  friend: 'Friend',
+  other: 'Someone else (say how)',
+};
+
+export const RELATIONSHIP_OPTIONS = RELATIONSHIPS.map(value => ({
+  value,
+  label: RELATIONSHIP_LABELS[value],
+}));
 
 export const KIND_OPTIONS = [
   { value: 'person', label: 'A person' },
@@ -57,9 +86,19 @@ export const contingencyQuestion = (kind: BeneficiaryKind): string =>
 export const contingencyLabel = (b: BeneficiaryDto): string =>
   ALL_CONTINGENCY_OPTIONS.find(o => o.value === (b.contingencyPlan ?? 'unset'))?.label ?? '';
 
+/** A relationship in words: the listed one, or what the testator typed for "other". */
+export const relationshipLabel = (
+  b: Pick<BeneficiaryDto, 'relationship' | 'relationshipOther'>
+) => {
+  if (!b.relationship) return '';
+  if (b.relationship === 'other') return b.relationshipOther ?? 'Other';
+  return RELATIONSHIP_LABELS[b.relationship];
+};
+
 /** The line under a name: how a person is related to you, or what kind of organisation it is. */
-export const beneficiarySubtitle = (b: Pick<BeneficiaryDto, 'relationship' | 'institutionType'>) =>
-  b.institutionType ? INSTITUTION_TYPE_LABELS[b.institutionType] : (b.relationship ?? '');
+export const beneficiarySubtitle = (
+  b: Pick<BeneficiaryDto, 'relationship' | 'relationshipOther' | 'institutionType'>
+) => (b.institutionType ? INSTITUTION_TYPE_LABELS[b.institutionType] : relationshipLabel(b));
 
 export const SEVERITY_LABELS: Record<InventoryIssue['severity'], string> = {
   error: 'Needs fixing',

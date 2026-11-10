@@ -1,29 +1,71 @@
-import { INSTITUTION_TYPES } from '@heartwood/shared';
+import { INSTITUTION_TYPES, RELATIONSHIPS } from '@heartwood/shared';
 import {
   conditionSummary,
   INSTITUTION_TYPE_LABELS,
   INSTITUTION_TYPE_OPTIONS,
+  RELATIONSHIP_OPTIONS,
+  relationshipLabel,
   beneficiarySubtitle,
   contingencyLabel,
   contingencyOptionsFor,
   contingencyQuestion,
 } from '../labels';
 
-describe('beneficiarySubtitle', () => {
-  it('shows how a person is related to you', () => {
-    expect(beneficiarySubtitle({ relationship: 'Daughter', institutionType: null })).toBe(
-      'Daughter'
+describe('relationshipLabel', () => {
+  it('writes a listed relationship in words', () => {
+    expect(relationshipLabel({ relationship: 'in_law', relationshipOther: null })).toBe('In-law');
+    expect(relationshipLabel({ relationship: 'grandchild', relationshipOther: null })).toBe(
+      'Grandchild'
     );
   });
 
+  it('shows what was typed for "other", and nothing for an organisation', () => {
+    expect(relationshipLabel({ relationship: 'other', relationshipOther: 'Godmother' })).toBe(
+      'Godmother'
+    );
+    expect(relationshipLabel({ relationship: 'other', relationshipOther: null })).toBe('Other');
+    expect(relationshipLabel({ relationship: null, relationshipOther: null })).toBe('');
+  });
+});
+
+describe('RELATIONSHIP_OPTIONS', () => {
+  it('lists every relationship the server accepts, each with its own label', () => {
+    const values = RELATIONSHIP_OPTIONS.map(o => o.value);
+    expect(values).toEqual([...RELATIONSHIPS]);
+    expect(new Set(RELATIONSHIP_OPTIONS.map(o => o.label)).size).toBe(RELATIONSHIPS.length);
+    expect(values[values.length - 1]).toBe('other');
+  });
+});
+
+describe('beneficiarySubtitle', () => {
+  it('shows how a person is related to you', () => {
+    expect(
+      beneficiarySubtitle({
+        relationship: 'daughter',
+        relationshipOther: null,
+        institutionType: null,
+      })
+    ).toBe('Daughter');
+  });
+
   it('shows what kind of organisation it is', () => {
-    expect(beneficiarySubtitle({ relationship: null, institutionType: 'church' })).toBe('Church');
-    expect(beneficiarySubtitle({ relationship: null, institutionType: 'orphanage' })).toBe(
-      'Orphanage'
-    );
-    expect(beneficiarySubtitle({ relationship: null, institutionType: 'other' })).toBe(
-      'Other organisation'
-    );
+    expect(
+      beneficiarySubtitle({
+        relationship: null,
+        relationshipOther: null,
+        institutionType: 'church',
+      })
+    ).toBe('Church');
+    expect(
+      beneficiarySubtitle({
+        relationship: null,
+        relationshipOther: null,
+        institutionType: 'orphanage',
+      })
+    ).toBe('Orphanage');
+    expect(
+      beneficiarySubtitle({ relationship: null, relationshipOther: null, institutionType: 'other' })
+    ).toBe('Other organisation');
   });
 });
 

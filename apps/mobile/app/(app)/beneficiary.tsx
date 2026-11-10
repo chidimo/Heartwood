@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { Pressable, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { BeneficiaryDto, BeneficiaryKind, InstitutionType } from '@heartwood/shared';
+import {
+  ageInYears,
+  type BeneficiaryDto,
+  type BeneficiaryKind,
+  type InstitutionType,
+  type Relationship,
+} from '@heartwood/shared';
 import { errorMessage } from '../../src/api/client';
 import { Button } from '../../src/components/button';
 import { QueryState } from '../../src/components/query-state';
@@ -18,12 +24,14 @@ import {
 import {
   INSTITUTION_TYPE_OPTIONS,
   KIND_OPTIONS,
+  RELATIONSHIP_OPTIONS,
   contingencyOptionsFor,
   contingencyQuestion,
   type ContingencyChoice,
 } from '../../src/features/inventory/labels';
 import { notify } from '../../src/notifications/notify';
 import { confirmDestructive } from '../../src/utils/confirm';
+import { formatDateInput, parseDateInput } from '../../src/utils/date';
 
 interface FormProps {
   /** The beneficiary being edited, or null to add a new one. */
@@ -40,7 +48,11 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
 
   const [kind, setKind] = useState<BeneficiaryKind>(existing?.kind ?? 'person');
   const [name, setName] = useState(existing?.name ?? '');
-  const [relationship, setRelationship] = useState(existing?.relationship ?? '');
+  const [relationship, setRelationship] = useState<string>(existing?.relationship ?? '');
+  const [relationshipOther, setRelationshipOther] = useState(existing?.relationshipOther ?? '');
+  const [dobText, setDobText] = useState(
+    existing?.dateOfBirth ? formatDateInput(existing.dateOfBirth) : ''
+  );
   const [institutionType, setInstitutionType] = useState<InstitutionType>(
     existing?.institutionType ?? 'church'
   );
@@ -50,6 +62,11 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
   const [fallbackId, setFallbackId] = useState<string>(existing?.contingencyBeneficiaryId ?? '');
 
   const isOrganisation = kind === 'institution';
+  const needsOther = !isOrganisation && relationship === 'other';
+
+  // Date of birth is optional; it only lets the app check an age condition.
+  const dateOfBirth = dobText.trim() ? parseDateInput(dobText) : null;
+  const dobInvalid = dobText.trim() !== '' && dateOfBirth === null;
 
   // "Pass it to their children" doesn't apply to an organisation.
   const handleKindChange = (next: BeneficiaryKind) => {
@@ -76,22 +93,21 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
       contingencyPlan: plan === 'unset' ? null : plan,
       contingencyBeneficiaryId: needsFallback ? fallbackId : null,
     };
+    // What only a person has, or only an organisation has. The kind of an existing one can't change.
+    const person = {
+      relationship: relationship as Relationship,
+      relationshipOther: relationship === 'other' ? relationshipOther.trim() : null,
+      dateOfBirth,
+    };
     if (existing) {
-      // The kind of an existing beneficiary can't change, so send only what fits it.
-      const fitting = isOrganisation ? { institutionType } : { relationship: relationship.trim() };
       update.mutate(
-        { ...common, ...fitting },
+        { ...common, ...(isOrganisation ? { institutionType } : person) },
         { onSuccess: () => handleDone('Saved'), onError: handleFailed("Couldn't save") }
       );
       return;
     }
     create.mutate(
-      {
-        ...common,
-        kind,
-        relationship: isOrganisation ? null : relationship.trim(),
-        institutionType: isOrganisation ? institutionType : null,
-      },
+      isOrganisation ? { ...common, kind, institutionType } : { ...common, kind, ...person },
       { onSuccess: () => handleDone('Beneficiary added'), onError: handleFailed("Couldn't add") }
     );
   };
@@ -131,12 +147,36 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
           testID="institution-type"
         />
       ) : (
-        <TextField
-          label="Relationship to you"
-          value={relationship}
-          onChangeText={setRelationship}
-          hint="For example daughter, brother, friend."
-        />
+        <>
+          <Select
+            label="Relationship to you"
+            value={relationship}
+            options={RELATIONSHIP_OPTIONS}
+            onChange={setRelationship}
+            testID="relationship"
+          />
+          {needsOther && (
+            <TextField
+              label="How are they related to you?"
+              value={relationshipOther}
+              onChangeText={setRelationshipOther}
+              hint="For example: godmother, mentor, business partner."
+            />
+          )}
+          <TextField
+            label="Date of birth (optional)"
+            value={dobText}
+            onChangeText={setDobText}
+            keyboardType="numbers-and-punctuation"
+            placeholder="DD/MM/YYYY"
+            error={dobInvalid ? 'Use DD/MM/YYYY, for example 15/06/2012.' : null}
+            hint={
+              dateOfBirth
+                ? `Age ${ageInYears(dateOfBirth)}. Only used to check age conditions on a gift.`
+                : 'Only used to check age conditions on a gift.'
+            }
+          />
+        </>
       )}
       <TextField
         label="Phone or email (optional)"

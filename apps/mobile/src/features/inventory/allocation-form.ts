@@ -163,12 +163,10 @@ export const toAllocationEntries = (form: AllocationForm): AllocationEntry[] => 
 };
 
 /** Ids of the people who currently receive something in this form (the only ones a condition can apply to). */
-export const recipientIds = (form: AllocationForm): string[] =>
-  form.mode === 'bequest'
-    ? form.bequestBeneficiaryId
-      ? [form.bequestBeneficiaryId]
-      : []
-    : sharesToEntries(form.shares).map(e => e.beneficiaryId);
+export const recipientIds = (form: AllocationForm): string[] => {
+  if (form.mode === 'split') return sharesToEntries(form.shares).map(e => e.beneficiaryId);
+  return form.bequestBeneficiaryId ? [form.bequestBeneficiaryId] : [];
+};
 
 const incompleteConditionProblem = (form: AllocationForm): string | null => {
   for (const personId of recipientIds(form)) {

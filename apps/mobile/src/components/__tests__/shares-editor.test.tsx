@@ -7,7 +7,8 @@ const person = (id: string, name: string): BeneficiaryDto => ({
   kind: 'person',
   name,
   institutionType: null,
-  relationship: 'Child',
+  relationship: 'son',
+  relationshipOther: null,
   contact: null,
   address: null,
   dateOfBirth: null,
@@ -23,6 +24,7 @@ const church: BeneficiaryDto = {
   ...person('c', 'Grace Chapel'),
   kind: 'institution',
   relationship: null,
+  relationshipOther: null,
   institutionType: 'church',
 };
 
