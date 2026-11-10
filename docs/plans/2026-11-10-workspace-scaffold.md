@@ -2,7 +2,7 @@
 
 Created: 2026-11-10
 
-Status: In progress — workspace builds, typechecks and passes its one test. Test database, CI and the security standard are still open (roadmap §0 items 3 and 4).
+Status: In progress — workspace, test database, CI and security standard built. Only the full `yarn dev` check against a local Postgres remains.
 
 Owner: Chidi Orji <orjichidi95@gmail.com>
 
@@ -30,7 +30,7 @@ A monorepo with the same shape and stack as Concord, running end to end with no 
 
 ## Remaining
 
-- [ ] Test database: `docker-compose.test.yml`, Jest global setup and reset helper (port from Concord) once there is a migration to test.
-- [ ] CI workflow (port Concord's `test-backend.yml`).
-- [ ] Security and data-minimisation standard, before the first asset model (Q9).
+- [x] Test database: `docker-compose.test.yml`, `scripts/test-backend.sh`, Jest global setup, catalog-driven `resetTestDb`. Migration runner (3 tests, incl. the per-file atomicity rule) and `/api/health/db` (2 tests) now run against real Postgres. Verified 2026-11-10: 6 tests pass.
+- [x] CI workflow `.github/workflows/ci.yml`: PRs into `main` only; format check, package build, typecheck, web lint, backend tests with coverage, web build. Each step run locally; the workflow itself has not run on GitHub yet.
+- [x] Security and data-minimisation standard: `docs/standards/security.md`.
 - [ ] Run `yarn dev` against a real local Postgres (`docker compose up -d`) and check the web page shows API status "ok". Only the backend liveness endpoint and builds were exercised.
