@@ -21,6 +21,8 @@ Status key: ✅ done · 🟡 in progress · ⬜ not started
    layout. See [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md).
 3. ✅ Test database and CI: `docker-compose.test.yml`, Jest global setup, and `.github/workflows/ci.yml` (runs on PRs into `main` only).
 4. ✅ [Security and data-minimisation standard](standards/security.md), written before the first asset model (Q9).
+5. ✅ Mobile app started: `apps/mobile` (Expo) scaffold and [mobile standard](standards/mobile.md). See [plans/2026-11-10-mobile-app-scaffold.md](plans/2026-11-10-mobile-app-scaffold.md). Q14 answered: we build web and mobile.
+6. ⬜ Mobile release setup: store accounts, bundle ID, EAS project (Q16).
 
 ### 1. MVP: inventory to draft will (no partnerships needed)
 
@@ -57,6 +59,7 @@ Not scheduled until the questions above are answered.
 
 One row per doc in `docs/plans/`.
 
-| Doc                                                                              | Status         | Notes                                                                             |
-| -------------------------------------------------------------------------------- | -------------- | --------------------------------------------------------------------------------- |
-| [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md) | 🟡 In progress | Scaffold, test DB, CI and security standard built; full `yarn dev` check remains. |
+| Doc                                                                                | Status         | Notes                                                                                                                                             |
+| ---------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md)   | 🟡 In progress | Scaffold, test DB, CI and security standard built; full `yarn dev` check remains.                                                                 |
+| [plans/2026-11-10-mobile-app-scaffold.md](plans/2026-11-10-mobile-app-scaffold.md) | 🟡 In progress | `apps/mobile` scaffolded and verified (typecheck, lint, 19 tests, iOS bundle export); not yet run on a simulator or device; EAS not set up (Q16). |

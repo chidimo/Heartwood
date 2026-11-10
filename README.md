@@ -22,15 +22,34 @@ The app is not what makes a transfer legal. A valid will is. Heartwood never hol
 
 ```
 apps/
-  backend/     Express API (not yet created)
-  web/         React + Vite app (not yet created)
+  backend/     Express API
+  web/         React + Vite app
+  mobile/      Expo app (standalone package, not a yarn workspace)
 packages/
-  database/    Kysely client, generated types (not yet created)
-  shared/      Zod schemas and types shared by apps (not yet created)
+  database/    Kysely client, generated types
+  shared/      Zod schemas and types shared by apps
 ```
 
 Stack is the same as [Concord](../Concord): Nx + Yarn 1, Node 22, TypeScript, Express, Kysely + Postgres, React + Vite + TanStack, Zod. Package scope is `@heartwood/*`.
 
 ## Provenance
 
-`docs/standards/`, the skills, and the root config were copied from Concord and adapted. The plan-doc format and roadmap "All plans" table, the `CLAUDE.md` rules and the git workflow came from Olamma. Olamma is Django and Expo, so its Python- and mobile-specific material was left out.
+`docs/standards/`, the skills, and the root config were copied from Concord and adapted. The plan-doc format and roadmap "All plans" table, the `CLAUDE.md` rules and the git workflow came from Olamma. Olamma is Django, so its Python-specific material was left out. The mobile standard (`docs/standards/mobile.md`) and `apps/mobile` draw on Olamma, Falcon and mobile-flashcards.
+
+## Running
+
+```bash
+yarn install
+docker compose up -d                      # local Postgres on :5432
+cp apps/backend/.env.example apps/backend/.env
+yarn db:migrate
+yarn dev                                  # backend :4300 and web :5175
+
+# Mobile has its own install (it is not a yarn workspace)
+yarn --cwd apps/mobile install
+cp apps/mobile/.env.example apps/mobile/.env
+yarn mobile:start
+
+yarn test:backend                         # starts a throwaway Postgres on :5433
+yarn mobile:test
+```
