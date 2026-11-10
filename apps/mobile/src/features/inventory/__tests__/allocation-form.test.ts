@@ -1,7 +1,11 @@
 import type { AllocationDto } from '@heartwood/shared';
 import {
   allocationFormProblem,
+  conditionProblem,
+  conditionToApi,
   emptyForm,
+  newCondition,
+  recipientIds,
   formFromAllocations,
   formatTotal,
   parsePercent,
@@ -84,8 +88,8 @@ describe('toAllocationEntries', () => {
       shares: { [A]: '70', [B]: '', [C]: '30' },
     });
     expect(entries).toEqual([
-      { beneficiaryId: A, sharePercent: 70, specificBequest: null },
-      { beneficiaryId: C, sharePercent: 30, specificBequest: null },
+      { beneficiaryId: A, sharePercent: 70, specificBequest: null, condition: null },
+      { beneficiaryId: C, sharePercent: 30, specificBequest: null, condition: null },
     ]);
   });
 
@@ -97,7 +101,7 @@ describe('toAllocationEntries', () => {
       bequestText: '  The Camry  ',
     });
     expect(entries).toEqual([
-      { beneficiaryId: A, sharePercent: null, specificBequest: 'The Camry' },
+      { beneficiaryId: A, sharePercent: null, specificBequest: 'The Camry', condition: null },
     ]);
   });
 });
@@ -105,8 +109,8 @@ describe('toAllocationEntries', () => {
 describe('formFromAllocations', () => {
   it('rebuilds a split', () => {
     const allocations: AllocationDto[] = [
-      { beneficiaryId: A, sharePercent: 50, specificBequest: null },
-      { beneficiaryId: B, sharePercent: 50, specificBequest: null },
+      { beneficiaryId: A, sharePercent: 50, specificBequest: null, condition: null },
+      { beneficiaryId: B, sharePercent: 50, specificBequest: null, condition: null },
     ];
     expect(formFromAllocations(allocations)).toMatchObject({
       mode: 'split',
@@ -116,7 +120,7 @@ describe('formFromAllocations', () => {
 
   it('rebuilds a bequest', () => {
     const form = formFromAllocations([
-      { beneficiaryId: A, sharePercent: null, specificBequest: 'The Camry' },
+      { beneficiaryId: A, sharePercent: null, specificBequest: 'The Camry', condition: null },
     ]);
     expect(form).toMatchObject({
       mode: 'bequest',
@@ -150,5 +154,140 @@ describe('residuaryFormProblem', () => {
     expect(residuaryFormProblem({ [A]: '100' })).toBeNull();
     expect(residuaryFormProblem({ [A]: '90' })).toBe('Shares must total exactly 100%');
     expect(residuaryFormProblem({})).toBeNull();
+  });
+});
+
+const HOLDER = '99999999-9999-4999-8999-999999999999';
+
+describe('conditionProblem', () => {
+  const valid = { ...newCondition(HOLDER), minAge: '25' };
+
+  it('accepts a complete age condition', () => expect(conditionProblem(valid, A)).toBeNull());
+
+  it.each(['', '0', '101', 'abc', '24.5', '-3'])('rejects an age of %p', minAge => {
+    expect(conditionProblem({ ...valid, minAge }, A)).toBe('Enter an age between 1 and 100.');
+  });
+
+  it('needs words for a free-text condition', () => {
+    const other = { ...valid, kind: 'other' as const, text: '   ' };
+    expect(conditionProblem(other, A)).toBe('Describe what has to happen first.');
+    expect(conditionProblem({ ...other, text: 'finishes her degree' }, A)).toBeNull();
+  });
+
+  it('needs a holder', () => {
+    expect(conditionProblem({ ...valid, holderId: '' }, A)).toMatch(/who will hold it/);
+  });
+
+  it('needs a fallback person only when the plan names one, and never the person the gift is for', () => {
+    const named = { ...valid, ifUnmet: 'named_beneficiary' as const };
+    expect(conditionProblem(named, A)).toMatch(/who receives it/);
+    expect(conditionProblem({ ...named, fallbackId: A }, A)).toMatch(/fall back to the person/);
+    expect(conditionProblem({ ...named, fallbackId: B }, A)).toBeNull();
+  });
+});
+
+describe('conditionToApi', () => {
+  it('converts an age condition, dropping a fallback the plan does not use', () => {
+    const c = { ...newCondition(HOLDER), minAge: '25', fallbackId: B };
+    expect(conditionToApi(c)).toEqual({
+      kind: 'min_age',
+      minAge: 25,
+      ifUnmet: 'redistribute',
+      fallbackBeneficiaryId: null,
+      holderId: HOLDER,
+    });
+  });
+
+  it('converts a free-text condition with a named fallback, trimming the text', () => {
+    const c = {
+      ...newCondition(HOLDER),
+      kind: 'other' as const,
+      text: '  finishes her degree ',
+      ifUnmet: 'named_beneficiary' as const,
+      fallbackId: B,
+    };
+    expect(conditionToApi(c)).toEqual({
+      kind: 'other',
+      text: 'finishes her degree',
+      ifUnmet: 'named_beneficiary',
+      fallbackBeneficiaryId: B,
+      holderId: HOLDER,
+    });
+  });
+});
+
+describe('conditions in the allocation form', () => {
+  const age25 = { ...newCondition(HOLDER), minAge: '25' };
+
+  it('attaches a condition to the right person, and only to people who receive something', () => {
+    const form = {
+      ...emptyForm,
+      shares: { [A]: '60', [B]: '40' },
+      conditions: { [A]: age25, [C]: age25 },
+    };
+    const entries = toAllocationEntries(form);
+    expect(entries.find(e => e.beneficiaryId === A)?.condition).toMatchObject({
+      kind: 'min_age',
+      minAge: 25,
+    });
+    expect(entries.find(e => e.beneficiaryId === B)?.condition).toBeNull();
+    expect(entries.map(e => e.beneficiaryId)).not.toContain(C);
+  });
+
+  it('blocks saving while a condition is unfinished, and says why', () => {
+    const form = {
+      ...emptyForm,
+      shares: { [A]: '100' },
+      conditions: { [A]: { ...age25, minAge: '' } },
+    };
+    expect(allocationFormProblem(form)).toBe(
+      'A condition is unfinished. Enter an age between 1 and 100.'
+    );
+  });
+
+  it('ignores an unfinished condition on someone who gets nothing', () => {
+    const form = {
+      ...emptyForm,
+      shares: { [A]: '100' },
+      conditions: { [B]: { ...age25, minAge: '' } },
+    };
+    expect(allocationFormProblem(form)).toBeNull();
+  });
+
+  it('applies to a specific bequest too', () => {
+    const form = {
+      ...emptyForm,
+      mode: 'bequest' as const,
+      bequestBeneficiaryId: A,
+      bequestText: 'The Camry',
+      conditions: { [A]: age25 },
+    };
+    expect(allocationFormProblem(form)).toBeNull();
+    expect(toAllocationEntries(form)[0].condition).toMatchObject({ kind: 'min_age', minAge: 25 });
+    expect(recipientIds(form)).toEqual([A]);
+  });
+
+  it('round-trips through the saved allocation', () => {
+    const saved = [
+      {
+        beneficiaryId: A,
+        sharePercent: 100,
+        specificBequest: null,
+        condition: {
+          kind: 'other' as const,
+          text: 'finishes her degree',
+          ifUnmet: 'named_beneficiary' as const,
+          fallbackBeneficiaryId: B,
+          holderId: HOLDER,
+        },
+      },
+    ];
+    const form = formFromAllocations(saved);
+    expect(form.conditions[A]).toMatchObject({
+      kind: 'other',
+      text: 'finishes her degree',
+      fallbackId: B,
+    });
+    expect(toAllocationEntries(form)).toEqual([{ ...saved[0] }]);
   });
 });

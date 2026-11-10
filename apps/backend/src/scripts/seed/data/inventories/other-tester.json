@@ -1,6 +1,6 @@
 {
   "assets": [{ "type": "cash", "description": "Current account", "institution": "Access Bank" }],
-  "beneficiaries": [{ "name": "Tunde Bello", "relationship": "Brother" }],
+  "beneficiaries": [{ "name": "Tunde Bello", "relationship": "brother" }],
   "executors": [],
   "allocations": [
     {

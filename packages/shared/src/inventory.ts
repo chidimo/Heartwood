@@ -85,6 +85,32 @@ export const ageInYears = (dateOfBirth: string, on: Date = new Date()): number =
   return hadBirthday ? years : years - 1;
 };
 
+// Closed list, so a relationship can be relied on (and shown in the right words). Anything not on it
+// is "other" with the testator's own words in relationshipOther. To add one: add it here, give it a
+// label in apps/mobile (labels.ts), and widen beneficiary_relationship_check in the migration.
+export const RELATIONSHIPS = [
+  'wife',
+  'husband',
+  'son',
+  'daughter',
+  'stepchild',
+  'father',
+  'mother',
+  'brother',
+  'sister',
+  'grandchild',
+  'grandparent',
+  'uncle',
+  'aunt',
+  'nephew',
+  'niece',
+  'cousin',
+  'in_law',
+  'friend',
+  'other',
+] as const;
+export type Relationship = (typeof RELATIONSHIPS)[number];
+
 export const BENEFICIARY_KINDS = ['person', 'institution'] as const;
 export type BeneficiaryKind = (typeof BENEFICIARY_KINDS)[number];
 
@@ -123,7 +149,11 @@ export const beneficiaryInputSchema = z
   .object({
     kind: z.enum(BENEFICIARY_KINDS).default('person'),
     name: plainText(200),
-    relationship: plainOptionalText(100),
+    relationship: z
+      .enum(RELATIONSHIPS)
+      .nullish()
+      .transform(v => v ?? null),
+    relationshipOther: plainOptionalText(100),
     institutionType: z
       .enum(INSTITUTION_TYPES)
       .nullish()
@@ -140,11 +170,19 @@ export const beneficiaryInputSchema = z
     if (!contingencyConsistent(v)) issue('contingencyBeneficiaryId', FALLBACK_MESSAGE);
     if (v.kind === 'person') {
       if (!v.relationship) issue('relationship', 'Say how this person is related to you');
+      if (v.relationship === 'other' && !v.relationshipOther) {
+        issue('relationshipOther', 'Say what the relationship is');
+      }
+      if (v.relationship !== 'other' && v.relationshipOther) {
+        issue('relationshipOther', 'Only "other" needs the relationship in words');
+      }
       if (v.institutionType) issue('institutionType', 'Only an organisation has a type');
       return;
     }
     if (!v.institutionType) issue('institutionType', 'Choose the kind of organisation');
-    if (v.relationship) issue('relationship', 'An organisation has no relationship to you');
+    if (v.relationship || v.relationshipOther) {
+      issue('relationship', 'An organisation has no relationship to you');
+    }
     if (v.dateOfBirth) issue('dateOfBirth', 'An organisation has no date of birth');
     if (v.contingencyPlan === 'pass_to_descendants') issue('contingencyPlan', NO_CHILDREN_MESSAGE);
   });
@@ -154,7 +192,8 @@ export type BeneficiaryInput = z.infer<typeof beneficiaryInputSchema>;
 export const beneficiaryUpdateSchema = z
   .object({
     name: plainText(200).optional(),
-    relationship: z.string().trim().min(1).max(100).nullable().optional(),
+    relationship: z.enum(RELATIONSHIPS).nullable().optional(),
+    relationshipOther: z.string().trim().min(1).max(100).nullable().optional(),
     institutionType: z.enum(INSTITUTION_TYPES).optional(),
     contact: z.string().trim().max(200).nullable().optional(),
     address: z.string().trim().max(500).nullable().optional(),
@@ -176,7 +215,9 @@ export interface BeneficiaryDto {
   kind: BeneficiaryKind;
   name: string;
   /** How a person is related to the testator; null for an organisation. */
-  relationship: string | null;
+  relationship: Relationship | null;
+  /** The relationship in the testator's words; only when relationship is "other". */
+  relationshipOther: string | null;
   /** What kind of organisation; null for a person. */
   institutionType: InstitutionType | null;
   contact: string | null;

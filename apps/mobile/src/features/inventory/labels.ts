@@ -4,6 +4,7 @@ import {
   type BeneficiaryKind,
   type ContingencyPlan,
   type InstitutionType,
+  type IfUnmetPlan,
   type InventoryIssue,
 } from '@heartwood/shared';
 
@@ -67,3 +68,41 @@ export const SEVERITY_LABELS: Record<InventoryIssue['severity'], string> = {
 };
 
 export const SEVERITY_ORDER: InventoryIssue['severity'][] = ['error', 'warning', 'info'];
+
+export const CONDITION_KIND_OPTIONS = [
+  { value: 'min_age', label: 'A minimum age' },
+  { value: 'other', label: 'Something else' },
+] as const;
+
+export const IF_UNMET_OPTIONS = [
+  { value: 'redistribute', label: 'Share it among my other beneficiaries' },
+  { value: 'named_beneficiary', label: 'Give it to someone I name' },
+  { value: 'residuary', label: 'Add it to "everything else"' },
+] as const satisfies readonly { value: IfUnmetPlan; label: string }[];
+
+export const EXECUTOR_KIND_OPTIONS = [
+  { value: 'executor', label: 'Executor' },
+  { value: 'lawyer', label: 'Lawyer' },
+] as const;
+
+const ifUnmetSentence = (plan: IfUnmetPlan, fallbackName: string): string => {
+  if (plan === 'named_beneficiary') return `it goes to ${fallbackName}`;
+  if (plan === 'residuary') return 'it goes into "everything else"';
+  return 'it is shared among my other beneficiaries';
+};
+
+interface ConditionLike {
+  kind: 'min_age' | 'other';
+  minAge: string | number;
+  text: string;
+  ifUnmet: IfUnmetPlan;
+}
+
+/** One plain sentence: "Only at age 25. Held by Barr. Adeyemi. If it is not met, it goes to Chidi Obi." */
+export const conditionSummary = (
+  c: ConditionLike,
+  names: { holder: string; fallback: string }
+): string => {
+  const what = c.kind === 'min_age' ? `Only at age ${c.minAge}` : `Only when ${c.text.trim()}`;
+  return `${what}. Held by ${names.holder}. If it is not met, ${ifUnmetSentence(c.ifUnmet, names.fallback)}.`;
+};

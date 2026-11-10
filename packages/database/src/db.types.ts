@@ -93,6 +93,7 @@ export interface Beneficiary {
   name: string;
   owner_id: string;
   relationship: string | null;
+  relationship_other: string | null;
   updated_at: Generated<Timestamp>;
 }
 

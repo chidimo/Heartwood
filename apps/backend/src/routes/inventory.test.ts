@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { INSTITUTION_TYPES, ageInYears } from '@heartwood/shared';
+import { INSTITUTION_TYPES, RELATIONSHIPS, ageInYears } from '@heartwood/shared';
 import { createTestApp, registerTestUser } from '../test-utils/test-app';
 import { useTestDb } from '../test-utils/useTestDb';
 
@@ -30,7 +30,7 @@ describe('inventory', () => {
     (
       await api.post('/api/beneficiaries', {
         name: 'Ngozi Obi',
-        relationship: 'Daughter',
+        relationship: 'daughter',
         ...overrides,
       })
     ).body;
@@ -147,7 +147,7 @@ describe('inventory', () => {
   describe('beneficiaries', () => {
     it('creates one and keeps contingency optional', async () => {
       const api = as((await registerTestUser(app)).bearer);
-      const b = await api.post('/api/beneficiaries', { name: 'Chidi', relationship: 'Son' });
+      const b = await api.post('/api/beneficiaries', { name: 'Chidi', relationship: 'son' });
       expect(b.status).toBe(201);
       expect(b.body.contingencyPlan).toBeNull();
     });
@@ -156,7 +156,7 @@ describe('inventory', () => {
       const api = as((await registerTestUser(app)).bearer);
       const res = await api.post('/api/beneficiaries', {
         name: 'A',
-        relationship: 'Son',
+        relationship: 'son',
         contingencyPlan: 'named_beneficiary',
       });
       expect(res.body.error).toMatch(/^Invalid contingencyBeneficiaryId: /);
@@ -167,20 +167,20 @@ describe('inventory', () => {
       const fallback = await newBeneficiary(api, { name: 'Fallback' });
       const missing = await api.post('/api/beneficiaries', {
         name: 'A',
-        relationship: 'Son',
+        relationship: 'son',
         contingencyPlan: 'named_beneficiary',
       });
       expect(missing.status).toBe(400);
       const stray = await api.post('/api/beneficiaries', {
         name: 'A',
-        relationship: 'Son',
+        relationship: 'son',
         contingencyPlan: 'redistribute',
         contingencyBeneficiaryId: fallback.id,
       });
       expect(stray.status).toBe(400);
       const ok = await api.post('/api/beneficiaries', {
         name: 'A',
-        relationship: 'Son',
+        relationship: 'son',
         contingencyPlan: 'named_beneficiary',
         contingencyBeneficiaryId: fallback.id,
       });
@@ -260,7 +260,7 @@ describe('inventory', () => {
       expect((await newBeneficiary(api, { address: '   ' })).address).toBeNull();
       const tooLong = await api.post('/api/beneficiaries', {
         name: 'A',
-        relationship: 'Son',
+        relationship: 'son',
         address: 'x'.repeat(501),
       });
       expect(tooLong.status).toBe(400);
@@ -276,6 +276,120 @@ describe('inventory', () => {
         address: 'Allen Avenue, Ikeja',
       });
       expect(res.body.address).toBe('Allen Avenue, Ikeja');
+    });
+  });
+
+  describe('relationships', () => {
+    const person = { name: 'Mama Ngozi', relationship: 'other', relationshipOther: 'Godmother' };
+
+    it.each(RELATIONSHIPS.filter(r => r !== 'other'))(
+      'accepts "%s" with no extra words',
+      async relationship => {
+        const api = as((await registerTestUser(app)).bearer);
+        const res = await api.post('/api/beneficiaries', { name: 'A', relationship });
+        expect(res.status).toBe(201);
+        expect(res.body).toMatchObject({ relationship, relationshipOther: null });
+      }
+    );
+
+    it('accepts "other" with the words, and returns both', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const res = await api.post('/api/beneficiaries', person);
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ relationship: 'other', relationshipOther: 'Godmother' });
+    });
+
+    it.each([
+      [
+        'a relationship that is not on the list',
+        { name: 'A', relationship: 'Godmother' },
+        'Invalid relationship',
+      ],
+      [
+        '"other" with no words',
+        { name: 'A', relationship: 'other' },
+        'Invalid relationshipOther: Say what the relationship is',
+      ],
+      [
+        '"other" with blank words',
+        { name: 'A', relationship: 'other', relationshipOther: '   ' },
+        'Invalid relationshipOther: Say what the relationship is',
+      ],
+      [
+        'words on a listed relationship',
+        { name: 'A', relationship: 'son', relationshipOther: 'Eldest' },
+        'Invalid relationshipOther: Only "other" needs the relationship in words',
+      ],
+      [
+        'words over 100 characters',
+        { name: 'A', relationship: 'other', relationshipOther: 'x'.repeat(101) },
+        'Invalid relationshipOther',
+      ],
+    ])('rejects %s', async (_label, body, message) => {
+      const api = as((await registerTestUser(app)).bearer);
+      const res = await api.post('/api/beneficiaries', body);
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe(message);
+    });
+
+    it('the database refuses a pair the service never saw', async () => {
+      const user = await registerTestUser(app);
+      const bad = (values: object) =>
+        db
+          .insertInto('beneficiary')
+          .values({ owner_id: user.account.id, name: 'X', kind: 'person', ...values } as never)
+          .execute();
+      await expect(bad({ relationship: 'godmother' })).rejects.toThrow();
+      await expect(bad({ relationship: 'other' })).rejects.toThrow();
+      await expect(bad({ relationship: 'son', relationship_other: 'Eldest' })).rejects.toThrow();
+      await expect(
+        bad({ relationship: 'other', relationship_other: 'Godmother' })
+      ).resolves.toBeDefined();
+    });
+
+    it('can change between a listed relationship and "other"', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const b = await newBeneficiary(api);
+      const toOther = await api.patch(`/api/beneficiaries/${b.id}`, {
+        relationship: 'other',
+        relationshipOther: 'Godmother',
+      });
+      expect(toOther.body).toMatchObject({ relationship: 'other', relationshipOther: 'Godmother' });
+      const back = await api.patch(`/api/beneficiaries/${b.id}`, {
+        relationship: 'friend',
+        relationshipOther: null,
+      });
+      expect(back.body).toMatchObject({ relationship: 'friend', relationshipOther: null });
+    });
+
+    it('refuses an update that leaves "other" without words, or words without "other"', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const b = await newBeneficiary(api);
+      expect(
+        (await api.patch(`/api/beneficiaries/${b.id}`, { relationship: 'other' })).status
+      ).toBe(422);
+      expect(
+        (await api.patch(`/api/beneficiaries/${b.id}`, { relationshipOther: 'Eldest' })).status
+      ).toBe(422);
+      const other = (await api.post('/api/beneficiaries', person)).body;
+      expect(
+        (await api.patch(`/api/beneficiaries/${other.id}`, { relationshipOther: null })).status
+      ).toBe(422);
+      expect(
+        (await api.patch(`/api/beneficiaries/${other.id}`, { relationshipOther: 'Mentor' })).body
+          .relationshipOther
+      ).toBe('Mentor');
+    });
+
+    it('does not apply to an organisation', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const res = await api.post('/api/beneficiaries', {
+        kind: 'institution',
+        name: 'Grace Chapel',
+        institutionType: 'church',
+        relationshipOther: 'Our church',
+      });
+      expect(res.status).toBe(400);
     });
   });
 
@@ -313,7 +427,7 @@ describe('inventory', () => {
       expect(person).toMatchObject({
         kind: 'person',
         institutionType: null,
-        relationship: 'Daughter',
+        relationship: 'daughter',
       });
     });
 
@@ -325,7 +439,7 @@ describe('inventory', () => {
       ],
       [
         'an organisation with a relationship',
-        { ...church, relationship: 'Cousin' },
+        { ...church, relationship: 'cousin' },
         'Invalid relationship: An organisation has no relationship to you',
       ],
       [
@@ -340,7 +454,7 @@ describe('inventory', () => {
       ],
       [
         'a person with an organisation type',
-        { name: 'Ada', relationship: 'Aunt', institutionType: 'church' },
+        { name: 'Ada', relationship: 'aunt', institutionType: 'church' },
         'Invalid institutionType: Only an organisation has a type',
       ],
     ])('rejects %s', async (_label, body, message) => {
@@ -358,11 +472,11 @@ describe('inventory', () => {
           .values({ owner_id: user.account.id, name: 'X', ...values } as never)
           .execute();
       await expect(
-        bad({ kind: 'institution', institution_type: 'church', relationship: 'Cousin' })
+        bad({ kind: 'institution', institution_type: 'church', relationship: 'cousin' })
       ).rejects.toThrow();
       await expect(bad({ kind: 'institution', institution_type: null })).rejects.toThrow();
       await expect(
-        bad({ kind: 'person', relationship: 'Son', institution_type: 'church' })
+        bad({ kind: 'person', relationship: 'son', institution_type: 'church' })
       ).rejects.toThrow();
       await expect(
         bad({
@@ -418,7 +532,7 @@ describe('inventory', () => {
         institutionType: 'charity',
       });
       expect(
-        (await api.patch(`/api/beneficiaries/${org.id}`, { relationship: 'Cousin' })).status
+        (await api.patch(`/api/beneficiaries/${org.id}`, { relationship: 'cousin' })).status
       ).toBe(422);
       const children = await api.patch(`/api/beneficiaries/${org.id}`, {
         contingencyPlan: 'pass_to_descendants',
@@ -730,7 +844,7 @@ describe('inventory', () => {
       const api = as((await registerTestUser(app)).bearer);
       const res = await api.post('/api/beneficiaries', {
         name: 'A',
-        relationship: 'Son',
+        relationship: 'son',
         dateOfBirth,
       });
       expect(res.status).toBe(400);

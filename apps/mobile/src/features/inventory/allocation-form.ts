@@ -3,6 +3,8 @@ import {
   residuaryProblem,
   type AllocationDto,
   type AllocationEntry,
+  type GiftCondition,
+  type IfUnmetPlan,
   type ResiduaryEntry,
 } from '@heartwood/shared';
 
@@ -11,8 +13,29 @@ import {
 
 export type AllocationMode = 'split' | 'bequest';
 
+/** A condition on one person's gift, as typed. Ages are text until they are checked. */
+export interface ConditionForm {
+  kind: 'min_age' | 'other';
+  minAge: string;
+  text: string;
+  ifUnmet: IfUnmetPlan;
+  fallbackId: string;
+  holderId: string;
+}
+
+export const newCondition = (holderId = ''): ConditionForm => ({
+  kind: 'min_age',
+  minAge: '',
+  text: '',
+  ifUnmet: 'redistribute',
+  fallbackId: '',
+  holderId,
+});
+
 export interface AllocationForm {
   mode: AllocationMode;
+  /** beneficiary id -> the condition on their gift (absent = no condition) */
+  conditions: Record<string, ConditionForm>;
   /** beneficiary id -> percent as typed ("" = not included) */
   shares: Record<string, string>;
   bequestBeneficiaryId: string | null;
@@ -21,24 +44,68 @@ export interface AllocationForm {
 
 export const emptyForm: AllocationForm = {
   mode: 'split',
+  conditions: {},
   shares: {},
   bequestBeneficiaryId: null,
   bequestText: '',
 };
 
+const conditionFormFromApi = (c: GiftCondition): ConditionForm => ({
+  kind: c.kind,
+  minAge: c.kind === 'min_age' ? String(c.minAge) : '',
+  text: c.kind === 'other' ? c.text : '',
+  ifUnmet: c.ifUnmet,
+  fallbackId: c.fallbackBeneficiaryId ?? '',
+  holderId: c.holderId,
+});
+
 export const formFromAllocations = (allocations: AllocationDto[]): AllocationForm => {
+  const conditions: Record<string, ConditionForm> = {};
+  for (const a of allocations) {
+    if (a.condition) conditions[a.beneficiaryId] = conditionFormFromApi(a.condition);
+  }
   const bequest = allocations.find(a => a.specificBequest !== null);
   if (bequest) {
     return {
       ...emptyForm,
       mode: 'bequest',
+      conditions,
       bequestBeneficiaryId: bequest.beneficiaryId,
       bequestText: bequest.specificBequest ?? '',
     };
   }
   const shares: Record<string, string> = {};
   for (const a of allocations) shares[a.beneficiaryId] = String(a.sharePercent);
-  return { ...emptyForm, shares };
+  return { ...emptyForm, conditions, shares };
+};
+
+/** Why a condition can't be saved yet, or null. `personId` is who the gift is for. */
+export const conditionProblem = (c: ConditionForm, personId: string): string | null => {
+  if (c.kind === 'min_age') {
+    const age = Number(c.minAge);
+    if (!/^\d{1,3}$/.test(c.minAge.trim()) || age < 1 || age > 100) {
+      return 'Enter an age between 1 and 100.';
+    }
+  } else if (!c.text.trim()) {
+    return 'Describe what has to happen first.';
+  }
+  if (!c.holderId) return 'Choose who will hold it until the condition is met.';
+  if (c.ifUnmet === 'named_beneficiary') {
+    if (!c.fallbackId) return "Choose who receives it if the condition isn't met.";
+    if (c.fallbackId === personId) return "A gift can't fall back to the person it is for.";
+  }
+  return null;
+};
+
+/** The condition as the API wants it. Call only when conditionProblem is null. */
+export const conditionToApi = (c: ConditionForm): GiftCondition => {
+  const common = {
+    ifUnmet: c.ifUnmet,
+    fallbackBeneficiaryId: c.ifUnmet === 'named_beneficiary' ? c.fallbackId : null,
+    holderId: c.holderId,
+  };
+  if (c.kind === 'min_age') return { kind: 'min_age', minAge: Number(c.minAge), ...common };
+  return { kind: 'other', text: c.text.trim(), ...common };
 };
 
 /** "33.5" -> 33.5, "" -> null (not included), "abc" or 33.333 -> NaN (invalid). */
@@ -71,6 +138,11 @@ export const totalHundredths = (shares: Record<string, string>): number =>
 export const formatTotal = (shares: Record<string, string>): string =>
   `${(totalHundredths(shares) / 100).toFixed(2).replace(/\.?0+$/, '')}%`;
 
+const conditionFor = (form: AllocationForm, personId: string): GiftCondition | null => {
+  const c = form.conditions[personId];
+  return c && conditionProblem(c, personId) === null ? conditionToApi(c) : null;
+};
+
 export const toAllocationEntries = (form: AllocationForm): AllocationEntry[] => {
   if (form.mode === 'bequest') {
     if (!form.bequestBeneficiaryId || !form.bequestText.trim()) return [];
@@ -79,10 +151,32 @@ export const toAllocationEntries = (form: AllocationForm): AllocationEntry[] => 
         beneficiaryId: form.bequestBeneficiaryId,
         sharePercent: null,
         specificBequest: form.bequestText.trim(),
+        condition: conditionFor(form, form.bequestBeneficiaryId),
       },
     ];
   }
-  return sharesToEntries(form.shares).map(e => ({ ...e, specificBequest: null }));
+  return sharesToEntries(form.shares).map(e => ({
+    ...e,
+    specificBequest: null,
+    condition: conditionFor(form, e.beneficiaryId),
+  }));
+};
+
+/** Ids of the people who currently receive something in this form (the only ones a condition can apply to). */
+export const recipientIds = (form: AllocationForm): string[] =>
+  form.mode === 'bequest'
+    ? form.bequestBeneficiaryId
+      ? [form.bequestBeneficiaryId]
+      : []
+    : sharesToEntries(form.shares).map(e => e.beneficiaryId);
+
+const incompleteConditionProblem = (form: AllocationForm): string | null => {
+  for (const personId of recipientIds(form)) {
+    const c = form.conditions[personId];
+    const problem = c ? conditionProblem(c, personId) : null;
+    if (problem) return `A condition is unfinished. ${problem}`;
+  }
+  return null;
 };
 
 /** Why the form can't be saved yet, or null. An empty form is fine: it clears the allocation. */
@@ -92,10 +186,11 @@ export const allocationFormProblem = (form: AllocationForm): string | null => {
     if (started && (!form.bequestBeneficiaryId || !form.bequestText.trim())) {
       return 'Choose who gets it and describe the gift.';
     }
-    return null;
+    return incompleteConditionProblem(form);
   }
   if (hasInvalidText(form.shares)) return 'Use numbers like 50 or 33.33 (up to 2 decimals).';
-  return allocationProblem(toAllocationEntries(form));
+  const shareProblem = allocationProblem(toAllocationEntries(form));
+  return shareProblem ?? incompleteConditionProblem(form);
 };
 
 export const toResiduaryEntries = (shares: Record<string, string>): ResiduaryEntry[] =>

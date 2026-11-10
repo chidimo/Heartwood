@@ -1,5 +1,6 @@
 import { INSTITUTION_TYPES } from '@heartwood/shared';
 import {
+  conditionSummary,
   INSTITUTION_TYPE_LABELS,
   INSTITUTION_TYPE_OPTIONS,
   beneficiarySubtitle,
@@ -72,5 +73,36 @@ describe('contingencyLabel', () => {
   it('reads "Not decided yet" when no plan is chosen', () => {
     const b = { contingencyPlan: null } as Parameters<typeof contingencyLabel>[0];
     expect(contingencyLabel(b)).toBe('Not decided yet');
+  });
+});
+
+describe('conditionSummary', () => {
+  const names = { holder: 'Barr. Adeyemi', fallback: 'Chidi Obi' };
+
+  it('reads as one plain sentence for an age', () => {
+    const c = {
+      kind: 'min_age' as const,
+      minAge: 25,
+      text: '',
+      ifUnmet: 'named_beneficiary' as const,
+    };
+    expect(conditionSummary(c, names)).toBe(
+      'Only at age 25. Held by Barr. Adeyemi. If it is not met, it goes to Chidi Obi.'
+    );
+  });
+
+  it('quotes the free text and describes each fallback plan', () => {
+    const other = {
+      kind: 'other' as const,
+      minAge: '',
+      text: ' she finishes her degree ',
+      ifUnmet: 'redistribute' as const,
+    };
+    expect(conditionSummary(other, names)).toBe(
+      'Only when she finishes her degree. Held by Barr. Adeyemi. If it is not met, it is shared among my other beneficiaries.'
+    );
+    expect(conditionSummary({ ...other, ifUnmet: 'residuary' }, names)).toMatch(
+      /goes into "everything else"/
+    );
   });
 });

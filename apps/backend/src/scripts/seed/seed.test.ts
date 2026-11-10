@@ -25,9 +25,19 @@ describe('dev seed', () => {
     ]);
     expect(await count('account')).toBe(2);
     expect(await count('asset')).toBe(6); // 5 + 1
-    expect(await count('beneficiary')).toBe(5); // 4 + 1
+    expect(await count('beneficiary')).toBe(6); // 5 + 1
     expect(await count('executor')).toBe(2);
     expect(await count('allocation')).toBe(2 + 1 + 2 + 1); // flat, camry, shares, other's account
+  });
+
+  it('seeds a relationship that is not on the list, with its own words', async () => {
+    await runSeed(db);
+    const godmother = await db
+      .selectFrom('beneficiary')
+      .select(['relationship', 'relationship_other'])
+      .where('name', '=', 'Mama Ngozi')
+      .executeTakeFirstOrThrow();
+    expect(godmother).toEqual({ relationship: 'other', relationship_other: 'Godmother' });
   });
 
   it('seeds a conditional gift with its holder and fallback, and a date of birth', async () => {
@@ -78,7 +88,7 @@ describe('dev seed', () => {
     expect(again.every(r => !r.created && !r.seededInventory)).toBe(true);
     expect(await count('account')).toBe(2);
     expect(await count('asset')).toBe(6);
-    expect(await count('beneficiary')).toBe(5);
+    expect(await count('beneficiary')).toBe(6);
     expect(lines.join('\n')).toMatch(/already has data/);
   });
 

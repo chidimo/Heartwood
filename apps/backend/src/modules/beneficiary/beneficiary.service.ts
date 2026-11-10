@@ -27,7 +27,8 @@ const toDto = (row: Row): BeneficiaryDto => ({
   id: row.id,
   kind: row.kind as BeneficiaryDto['kind'],
   name: row.name,
-  relationship: row.relationship,
+  relationship: row.relationship as BeneficiaryDto['relationship'],
+  relationshipOther: row.relationship_other,
   institutionType: row.institution_type as BeneficiaryDto['institutionType'],
   contact: row.contact,
   address: row.address,
@@ -48,17 +49,29 @@ export const getBeneficiary = async (db: DbClient, ownerId: string, id: string) 
 };
 
 /** An update must keep a person a person and an organisation an organisation (the kind never changes). */
-const checkFitsKind = (kind: string, currentPlan: string | null, input: BeneficiaryUpdate) => {
-  if (kind === 'person') {
+const checkFitsKind = (existing: Row, input: BeneficiaryUpdate) => {
+  if (existing.kind === 'person') {
     if (input.institutionType !== undefined) {
       throw unprocessable('Only an organisation has a type');
     }
-    if (input.relationship === null) throw unprocessable('Say how this person is related to you');
+    // The relationship pair as it will be after this update must still make sense.
+    const relationship =
+      input.relationship === undefined ? existing.relationship : input.relationship;
+    const other =
+      input.relationshipOther === undefined ? existing.relationship_other : input.relationshipOther;
+    if (!relationship) throw unprocessable('Say how this person is related to you');
+    if (relationship === 'other' && !other) throw unprocessable('Say what the relationship is');
+    if (relationship !== 'other' && other) {
+      throw unprocessable('Only "other" needs the relationship in words');
+    }
     return;
   }
-  if (input.relationship) throw unprocessable('An organisation has no relationship to you');
+  if (input.relationship || input.relationshipOther) {
+    throw unprocessable('An organisation has no relationship to you');
+  }
   if (input.dateOfBirth) throw unprocessable('An organisation has no date of birth');
-  const plan = input.contingencyPlan === undefined ? currentPlan : input.contingencyPlan;
+  const plan =
+    input.contingencyPlan === undefined ? existing.contingency_plan : input.contingencyPlan;
   if (plan === 'pass_to_descendants') {
     throw unprocessable('An organisation has no children to pass a gift to');
   }
@@ -86,6 +99,7 @@ export const createBeneficiary = (db: DbClient, ownerId: string, input: Benefici
       kind: input.kind,
       name: input.name,
       relationship: input.relationship,
+      relationship_other: input.relationshipOther,
       institution_type: input.institutionType,
       contact: input.contact,
       address: input.address,
@@ -113,11 +127,12 @@ export const updateBeneficiary = (
   db.transaction().execute(async trx => {
     const existing = await findBeneficiary(trx, ownerId, id);
     if (!existing) throw notFoundError('Beneficiary not found');
-    checkFitsKind(existing.kind, existing.contingency_plan, input);
+    checkFitsKind(existing, input);
     await checkFallback(trx, ownerId, id, input.contingencyBeneficiaryId);
     const row = await updateRow(trx, ownerId, id, {
       name: input.name,
       relationship: input.relationship,
+      relationship_other: input.relationshipOther,
       institution_type: input.institutionType,
       contact: input.contact,
       address: input.address,

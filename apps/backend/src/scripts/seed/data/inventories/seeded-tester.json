@@ -30,12 +30,12 @@
   "beneficiaries": [
     {
       "name": "Ada Obi",
-      "relationship": "Daughter",
+      "relationship": "daughter",
       "dateOfBirth": "2012-06-15"
     },
     {
       "name": "Chidi Obi",
-      "relationship": "Son",
+      "relationship": "son",
       "contact": "0803 000 0000",
       "contingencyPlan": "redistribute",
       "dateOfBirth": "1995-03-02"
@@ -51,6 +51,12 @@
       "kind": "institution",
       "name": "Hope Home Orphanage",
       "institutionType": "orphanage"
+    },
+    {
+      "name": "Mama Ngozi",
+      "relationship": "other",
+      "relationshipOther": "Godmother",
+      "contingencyPlan": "redistribute"
     }
   ],
   "executors": [

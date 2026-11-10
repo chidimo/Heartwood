@@ -25,6 +25,7 @@ export const insertBeneficiary = (
     kind: string;
     name: string;
     relationship: string | null;
+    relationship_other: string | null;
     institution_type: string | null;
     contact: string | null;
     address: string | null;
@@ -41,6 +42,7 @@ export const updateBeneficiary = (
   values: Partial<{
     name: string;
     relationship: string | null;
+    relationship_other: string | null;
     institution_type: string;
     contact: string | null;
     address: string | null;
