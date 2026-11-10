@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { ageInYears, isoFromDate } from '@heartwood/shared';
+import { isoFromDate } from '@heartwood/shared';
 import { CONTROL, Field } from './field';
 
 interface Props {
@@ -29,7 +29,3 @@ export const DateField = ({ label, value, onChange, maxDate = new Date(), hint }
     </Field>
   );
 };
-
-/** "Age 24." for a date of birth, or an empty string. */
-export const ageText = (dateOfBirth: string | null): string =>
-  dateOfBirth ? `Age ${ageInYears(dateOfBirth)}. ` : '';

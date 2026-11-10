@@ -48,8 +48,10 @@ jobs:
       - name: Typecheck backend and web
         run: yarn typecheck
 
-      - name: Lint web
-        run: yarn --cwd apps/web lint
+      - name: Lint and test web
+        run: |
+          yarn web:lint
+          yarn web:test
 
       - name: Backend tests
         run: npx jest --config jest.config.js --coverage

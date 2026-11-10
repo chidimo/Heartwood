@@ -1,26 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AuthResponse, PublicAccount } from '@heartwood/shared';
+import { AuthContext, type AuthValue, type Status } from './use-auth';
 import { apiFetch, postJson, refreshSession, setSignedOutHandler, tokens } from '../api/client';
-
-export type Status = 'loading' | 'signedOut' | 'signedIn';
-
-interface AuthValue {
-  status: Status;
-  account: PublicAccount | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthValue | null>(null);
-
-export const useAuth = (): AuthValue => {
-  const value = useContext(AuthContext);
-  if (!value) throw new Error('useAuth must be used inside AuthProvider');
-  return value;
-};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const queryClient = useQueryClient();

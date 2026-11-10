@@ -73,3 +73,16 @@ untraceable edit to the inventory is the dispute we exist to prevent.
 
 **How to apply it:** a plan for the first asset table must include its audit columns or log table. Don't ship
 the table without them and add them later.
+
+## Rule 6 — The web client keeps its refresh token in localStorage, so it loads no third-party scripts
+
+The web client holds the access token in memory only, and the refresh token in `localStorage` so a reload
+keeps the person signed in. Any script running on the app's origin can read that token. (Mobile uses secure
+storage and does not have this problem.)
+
+**Why:** an in-memory-only token would sign people out on every reload; an `httpOnly` cookie needs the API
+and the web app on one site and CSRF protection, which we have not built. Until we do, the exposure is
+accepted and kept small: refresh tokens rotate on every use, and reuse revokes the whole family.
+
+**How to apply it:** no analytics, chat widgets, ad tags or other third-party scripts in `apps/web`, and no
+`dangerouslySetInnerHTML` with user text. Revisit if the web client ever needs either.

@@ -4,6 +4,7 @@ import type {
   AllocationEntry,
   AssetDto,
   AssetInput,
+  AssetUpdate,
   BeneficiaryDto,
   BeneficiaryInput,
   BeneficiaryUpdate,
@@ -47,6 +48,15 @@ export const useCreateAsset = () => {
   return useMutation({
     mutationFn: (input: Partial<AssetInput> & Pick<AssetInput, 'type' | 'description'>) =>
       postJson<AssetDto>('/assets', input),
+    onSuccess: refresh,
+  });
+};
+
+export const useUpdateAsset = (id: string) => {
+  const refresh = useRefreshAfterWrite();
+  return useMutation({
+    mutationFn: (input: AssetUpdate) =>
+      apiFetch<AssetDto>(`/assets/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
     onSuccess: refresh,
   });
 };

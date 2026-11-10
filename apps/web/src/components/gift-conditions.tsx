@@ -4,13 +4,14 @@ import {
   CONDITION_KIND_OPTIONS,
   EXECUTOR_KIND_OPTIONS,
   IF_UNMET_OPTIONS,
+  conditionKindHint,
+  conditionNoteLabel,
   conditionProblem,
   conditionSummary,
   newCondition,
   type ConditionForm,
 } from '@heartwood/shared';
 import { Button } from './button';
-import { Segmented } from './segmented';
 import { SelectField } from './select-field';
 import { TextField } from './text-field';
 
@@ -58,11 +59,12 @@ const ConditionEditor = ({
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-primary-600/30 p-4">
       <h4 className="font-semibold">Condition for {person.name}</h4>
-      <Segmented
-        label="Kind of condition"
+      <SelectField
+        label="This gift is held back until"
         value={value.kind}
         options={CONDITION_KIND_OPTIONS}
         onChange={kind => onChange({ ...value, kind })}
+        hint={conditionKindHint(value.kind) ?? undefined}
       />
       {value.kind === 'min_age' && (
         <TextField
@@ -73,15 +75,21 @@ const ConditionEditor = ({
           placeholder="25"
         />
       )}
-      {value.kind === 'other' && (
+      {value.kind === 'survives' && (
         <TextField
-          label="What has to happen first?"
-          value={value.text}
-          onChange={text => onChange({ ...value, text })}
-          multiline
-          hint="For example: she finishes university. Your lawyer will check the wording."
+          label="Number of days"
+          value={value.days}
+          onChange={days => onChange({ ...value, days })}
+          inputMode="numeric"
+          placeholder="30"
         />
       )}
+      <TextField
+        label={conditionNoteLabel(value.kind)}
+        value={value.text}
+        onChange={text => onChange({ ...value, text })}
+        multiline
+      />
 
       {executors.length === 0 ? (
         <p>
@@ -150,8 +158,7 @@ export const GiftConditions = ({
   };
 
   const handleRemove = (personId: string) => {
-    const { [personId]: _removed, ...rest } = conditions;
-    onChange(rest);
+    onChange(Object.fromEntries(Object.entries(conditions).filter(([id]) => id !== personId)));
     if (editingId === personId) setEditingId(null);
   };
 
