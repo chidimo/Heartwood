@@ -44,6 +44,8 @@ docker compose up -d                      # local Postgres on :5432
 cp apps/backend/.env.example apps/backend/.env
 yarn db:migrate
 yarn dev                                  # backend :4300 and web :5175
+# Start the backend with yarn backend:start (or tsx from apps/backend), not tsx from the repo root:
+# only there do the tsconfig paths resolve @heartwood/shared to source instead of a stale dist.
 
 # Mobile has its own install (it is not a yarn workspace)
 yarn --cwd apps/mobile install

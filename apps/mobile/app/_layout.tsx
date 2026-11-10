@@ -1,11 +1,13 @@
 import '../global.css';
 import { useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Toaster } from 'sonner-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from '../src/api/client';
+import { AuthProvider, useAuth } from '../src/auth/auth-context';
 
 const RETRY_ATTEMPTS = 3;
 
@@ -16,6 +18,29 @@ const shouldRetry = (failureCount: number, error: unknown) => {
   return failureCount < RETRY_ATTEMPTS;
 };
 
+const Routes = () => {
+  const { status } = useAuth();
+  if (status === 'loading') {
+    return (
+      <View className="flex-1 items-center justify-center bg-white dark:bg-ink">
+        <ActivityIndicator />
+      </View>
+    );
+  }
+  const signedIn = status === 'signedIn';
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={signedIn}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
+      <Stack.Protected guard={!signedIn}>
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+      </Stack.Protected>
+    </Stack>
+  );
+};
+
 const RootLayout = () => {
   const [queryClient] = useState(
     () =>
@@ -24,9 +49,11 @@ const RootLayout = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
-        <StatusBar style="auto" />
-        <Stack screenOptions={{ headerShown: false }} />
-        <Toaster />
+        <AuthProvider>
+          <StatusBar style="auto" />
+          <Routes />
+          <Toaster />
+        </AuthProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

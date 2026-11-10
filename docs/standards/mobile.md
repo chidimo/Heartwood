@@ -197,6 +197,18 @@ If a screen or component uses a module that doesn't run on the web build (maps, 
 **Why:** Metro picks the right file per platform, so the web build keeps working for local development without
 conditionals scattered through the code (Falcon's `customers-map.web.tsx`).
 
+## Rule 18 — A choice from a fixed list is a `Select` dropdown
+
+Use `Select` (`src/components/select.tsx`: a field showing the current choice that opens the options in a
+bottom sheet), not a row of chips and not the platform picker wheel.
+
+**Why:** chips don't scale past a handful of options and wrap unpredictably on small phones; the iOS picker is an
+inline wheel that takes over the form. A dropdown stays one line tall and reads the same on both platforms. The
+asset type started as chips and was changed on feedback.
+
+**How to apply it:** pass `options` as `{value, label}` pairs derived from the shared constant (for example
+`ASSET_TYPES` and its labels), so the list can't drift from what the server accepts.
+
 ## What we deliberately did not copy
 
 - **Direct AsyncStorage use** (mobile-flashcards' `work-with-storage.ts` wraps it but stores everything there,

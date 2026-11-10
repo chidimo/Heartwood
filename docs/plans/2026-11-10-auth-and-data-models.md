@@ -2,7 +2,7 @@
 
 Created: 2026-11-10
 
-Status: In progress
+Status: In progress — backend and mobile built and verified; web client, and mobile screens for beneficiaries, allocations and the report, still to do
 
 Owner: Chidi Orji <orjichidi95@gmail.com>
 
@@ -52,5 +52,5 @@ Checklist. One item at a time; commit each. Tests are written with the code, not
 
 ### Clients
 
-- [ ] Mobile: sign-in, asset list and add; verified in the iOS Simulator
+- [x] Mobile: register, sign-in, sign-out, asset list and add (type is a `Select` dropdown). Verified in the iOS Simulator against a real backend and database on 2026-11-10: register 201, login 200, asset create 201 with its audit row, the account-number guard shows a toast, a stale session returns to sign-in (401 on `/me` then on refresh), the dark header and inline password validation render. 34 mobile tests pass. Not covered: sign-out, token refresh on a live expiry, Android.
 - [ ] Web: sign-in, asset list and add

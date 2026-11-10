@@ -89,7 +89,7 @@ describe('inventory', () => {
           [field]: 'Acct 0123 456 789 0',
         });
         expect(res.status).toBe(400);
-        expect(res.body.error).toBe(`Invalid ${field}`);
+        expect(res.body.error).toBe(`Invalid ${field}: Don't include account numbers`);
         expect(JSON.stringify(res.body)).not.toContain('0123');
       }
       // A short number (a year, a quantity) is fine.
@@ -149,6 +149,16 @@ describe('inventory', () => {
       const b = await api.post('/api/beneficiaries', { name: 'Chidi', relationship: 'Son' });
       expect(b.status).toBe(201);
       expect(b.body.contingencyPlan).toBeNull();
+    });
+
+    it('explains a contingency mismatch with our own message', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const res = await api.post('/api/beneficiaries', {
+        name: 'A',
+        relationship: 'Son',
+        contingencyPlan: 'named_beneficiary',
+      });
+      expect(res.body.error).toMatch(/^Invalid contingencyBeneficiaryId: /);
     });
 
     it('requires a fallback beneficiary exactly when the plan is "named_beneficiary"', async () => {

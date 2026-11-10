@@ -78,7 +78,10 @@ export const beneficiaryInputSchema = z
     contingencyPlan: contingencyFields.contingencyPlan.default(null),
     contingencyBeneficiaryId: contingencyFields.contingencyBeneficiaryId.default(null),
   })
-  .refine(contingencyConsistent, { message: 'contingency', path: ['contingencyBeneficiaryId'] });
+  .refine(contingencyConsistent, {
+    message: 'A fallback beneficiary goes with the "named beneficiary" plan only',
+    path: ['contingencyBeneficiaryId'],
+  });
 export type BeneficiaryInput = z.infer<typeof beneficiaryInputSchema>;
 
 export const beneficiaryUpdateSchema = z
@@ -94,7 +97,10 @@ export const beneficiaryUpdateSchema = z
       v.contingencyPlan === undefined && v.contingencyBeneficiaryId === undefined
         ? true
         : contingencyConsistent(v),
-    { message: 'contingency', path: ['contingencyBeneficiaryId'] }
+    {
+      message: 'A fallback beneficiary goes with the "named beneficiary" plan only',
+      path: ['contingencyBeneficiaryId'],
+    }
   );
 export type BeneficiaryUpdate = z.infer<typeof beneficiaryUpdateSchema>;
 
