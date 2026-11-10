@@ -7,23 +7,38 @@
       "roughValue": 45000000,
       "notes": "Title deed is with the family lawyer"
     },
-    { "type": "vehicle", "description": "Toyota Camry 2014" },
-    { "type": "cash", "description": "Savings account", "institution": "GTBank" },
+    {
+      "type": "vehicle",
+      "description": "Toyota Camry 2014"
+    },
+    {
+      "type": "cash",
+      "description": "Savings account",
+      "institution": "GTBank"
+    },
     {
       "type": "business_shares",
       "description": "Shares in the family business",
       "institution": "Obi & Sons Ltd",
       "roughValue": 12000000
     },
-    { "type": "digital", "description": "Family photo archive in cloud storage" }
+    {
+      "type": "digital",
+      "description": "Family photo archive in cloud storage"
+    }
   ],
   "beneficiaries": [
-    { "name": "Ada Obi", "relationship": "Daughter" },
+    {
+      "name": "Ada Obi",
+      "relationship": "Daughter",
+      "dateOfBirth": "2012-06-15"
+    },
     {
       "name": "Chidi Obi",
       "relationship": "Son",
       "contact": "0803 000 0000",
-      "contingencyPlan": "redistribute"
+      "contingencyPlan": "redistribute",
+      "dateOfBirth": "1995-03-02"
     },
     {
       "kind": "institution",
@@ -39,34 +54,73 @@
     }
   ],
   "executors": [
-    { "kind": "lawyer", "name": "Barr. Adeyemi", "contact": "0802 000 0000" },
-    { "kind": "executor", "name": "Uncle Emeka", "contact": "emeka@example.com" }
+    {
+      "kind": "lawyer",
+      "name": "Barr. Adeyemi",
+      "contact": "0802 000 0000"
+    },
+    {
+      "kind": "executor",
+      "name": "Uncle Emeka",
+      "contact": "emeka@example.com"
+    }
   ],
   "allocations": [
     {
       "asset": "3-bedroom flat, Surulere",
       "entries": [
-        { "beneficiary": "Ada Obi", "sharePercent": 50 },
-        { "beneficiary": "Chidi Obi", "sharePercent": 50 }
+        {
+          "beneficiary": "Ada Obi",
+          "sharePercent": 50,
+          "condition": {
+            "kind": "min_age",
+            "minAge": 25,
+            "ifUnmet": "named_beneficiary",
+            "fallbackBeneficiary": "Chidi Obi",
+            "holder": "Barr. Adeyemi"
+          }
+        },
+        {
+          "beneficiary": "Chidi Obi",
+          "sharePercent": 50
+        }
       ]
     },
     {
       "asset": "Toyota Camry 2014",
       "entries": [
-        { "beneficiary": "Chidi Obi", "specificBequest": "The Camry, with its documents" }
+        {
+          "beneficiary": "Chidi Obi",
+          "specificBequest": "The Camry, with its documents"
+        }
       ]
     },
     {
       "asset": "Shares in the family business",
       "entries": [
-        { "beneficiary": "Ada Obi", "sharePercent": 60 },
-        { "beneficiary": "Chidi Obi", "sharePercent": 40 }
+        {
+          "beneficiary": "Ada Obi",
+          "sharePercent": 60
+        },
+        {
+          "beneficiary": "Chidi Obi",
+          "sharePercent": 40
+        }
       ]
     }
   ],
   "residuary": [
-    { "beneficiary": "Ada Obi", "sharePercent": 40 },
-    { "beneficiary": "Chidi Obi", "sharePercent": 40 },
-    { "beneficiary": "Grace Chapel, Ikeja", "sharePercent": 20 }
+    {
+      "beneficiary": "Ada Obi",
+      "sharePercent": 40
+    },
+    {
+      "beneficiary": "Chidi Obi",
+      "sharePercent": 40
+    },
+    {
+      "beneficiary": "Grace Chapel, Ikeja",
+      "sharePercent": 20
+    }
   ]
 }

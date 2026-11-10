@@ -30,6 +30,36 @@ describe('dev seed', () => {
     expect(await count('allocation')).toBe(2 + 1 + 2 + 1); // flat, camry, shares, other's account
   });
 
+  it('seeds a conditional gift with its holder and fallback, and a date of birth', async () => {
+    await runSeed(db);
+    const gift = await db
+      .selectFrom('allocation as a')
+      .innerJoin('beneficiary as b', 'b.id', 'a.beneficiary_id')
+      .innerJoin('executor as x', 'x.id', 'a.condition_holder_id')
+      .select([
+        'b.name as person',
+        'a.condition_kind',
+        'a.condition_min_age',
+        'a.condition_if_unmet',
+        'x.name as holder',
+      ])
+      .where('a.condition_kind', 'is not', null)
+      .executeTakeFirstOrThrow();
+    expect(gift).toEqual({
+      person: 'Ada Obi',
+      condition_kind: 'min_age',
+      condition_min_age: 25,
+      condition_if_unmet: 'named_beneficiary',
+      holder: 'Barr. Adeyemi',
+    });
+    const ada = await db
+      .selectFrom('beneficiary')
+      .select('date_of_birth')
+      .where('name', '=', 'Ada Obi')
+      .executeTakeFirstOrThrow();
+    expect(ada.date_of_birth).not.toBeNull();
+  });
+
   it('seeds data that obeys the rules: nothing in the review needs fixing', async () => {
     await runSeed(db);
     const account = await db

@@ -46,6 +46,17 @@ const inventoryFile = z.object({
           beneficiary: z.string(),
           sharePercent: z.number().nullish(),
           specificBequest: z.string().nullish(),
+          // A condition names its holder (an executor or lawyer) and any fallback person by name.
+          condition: z
+            .object({
+              kind: z.enum(['min_age', 'other']),
+              minAge: z.number().optional(),
+              text: z.string().optional(),
+              ifUnmet: z.string(),
+              holder: z.string(),
+              fallbackBeneficiary: z.string().optional(),
+            })
+            .nullish(),
         })
       ),
     })
@@ -69,7 +80,10 @@ const seedInventory = async (db: DbClient, ownerId: string, inventory: Inventory
   for (const input of inventory.beneficiaries) {
     beneficiaries.set(input.name, (await createBeneficiary(db, ownerId, input)).id);
   }
-  for (const input of inventory.executors) await createExecutor(db, ownerId, input);
+  const executors = new Map<string, string>();
+  for (const input of inventory.executors) {
+    executors.set(input.name, (await createExecutor(db, ownerId, input)).id);
+  }
 
   for (const { asset, entries } of inventory.allocations) {
     const parsed = replaceAllocationsSchema.parse({
@@ -77,6 +91,18 @@ const seedInventory = async (db: DbClient, ownerId: string, inventory: Inventory
         beneficiaryId: idByName(beneficiaries, e.beneficiary, 'beneficiary'),
         sharePercent: e.sharePercent,
         specificBequest: e.specificBequest,
+        condition: e.condition
+          ? {
+              kind: e.condition.kind,
+              minAge: e.condition.minAge,
+              text: e.condition.text,
+              ifUnmet: e.condition.ifUnmet,
+              holderId: idByName(executors, e.condition.holder, 'executor'),
+              fallbackBeneficiaryId: e.condition.fallbackBeneficiary
+                ? idByName(beneficiaries, e.condition.fallbackBeneficiary, 'beneficiary')
+                : null,
+            }
+          : null,
       })),
     });
     await replaceAssetAllocations(db, ownerId, idByName(assets, asset, 'asset'), parsed.entries);
