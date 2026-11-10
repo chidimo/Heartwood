@@ -23,14 +23,12 @@ ones below are inherited: they cost us in Concord or Olamma, and we are not re-p
 | [interactions.md](interactions.md) | route → service → repository layering; a repository is private to its service                       | Concord |
 | [transactions.md](transactions.md) | When to use a transaction; keeping reads and writes separable                                       | Concord |
 | [frontend.md](frontend.md)         | Mutations toast on success and failure; handle `isPending`/`isError`; `handle*` handler names       | Both    |
+| [security.md](security.md)         | Data minimisation, no sensitive logging, owner-scoped access, secrets, audit trail                  | New     |
 | [plans.md](plans.md)               | Checklist plan docs in `docs/plans/`; `~` when done; roadmap table; plans name their open questions | Both    |
 
 Add a row here whenever you add a file.
 
 ## Not yet written (expected as we build)
 
-- **Security and data minimisation.** What we may and may not store (e.g. "GTBank account" plus a hint, never
-  account numbers); encryption at rest; logging that never contains asset details. Write this before the first
-  asset model ships. See open question Q9.
+- **Mobile.** Being written alongside `apps/mobile`.
 - **Money and shares.** How allocation percentages are stored and validated so shares can't drift past 100%.
-- **Audit trail.** Every change to a will or inventory is recorded with who and when.

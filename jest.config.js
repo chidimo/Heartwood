@@ -4,6 +4,7 @@ module.exports = {
   testEnvironment: 'node',
   rootDir: '.',
   roots: ['<rootDir>/apps/backend/src'],
+  globalSetup: '<rootDir>/apps/backend/src/test-utils/global-setup.ts',
   testMatch: ['<rootDir>/apps/backend/src/**/*.test.ts'],
   // Resolve workspace packages straight to source so tests never run against a stale dist.
   moduleNameMapper: {
@@ -25,4 +26,14 @@ module.exports = {
       },
     ],
   },
+  // Only collected with --coverage (used in CI), so local runs stay quiet.
+  collectCoverageFrom: [
+    'apps/backend/src/**/*.ts',
+    '!apps/backend/src/**/*.test.ts',
+    '!apps/backend/src/test-utils/**',
+    '!apps/backend/src/scripts/**',
+    '!apps/backend/src/index.ts',
+  ],
+  coverageDirectory: '<rootDir>/coverage/backend',
+  coverageReporters: ['text-summary', 'lcov'],
 };

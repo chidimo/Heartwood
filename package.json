@@ -17,7 +17,7 @@
     "db:migrate": "nx run backend:migrate",
     "db:migration:create": "nx run backend:migration:create",
     "typecheck": "nx run-many -t typecheck --projects=backend,web",
-    "test:backend": "jest --config jest.config.js",
+    "test:backend": "./scripts/test-backend.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

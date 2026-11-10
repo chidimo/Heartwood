@@ -19,8 +19,8 @@ Status key: ✅ done · 🟡 in progress · ⬜ not started
 1. ✅ Repo skeleton: `docs/` with roadmap, plans, standards and open questions; root config copied from Concord.
 2. ✅ Workspace stood up: `apps/backend`, `apps/web`, `packages/database`, `packages/shared`, mirroring Concord's
    layout. See [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md).
-3. ⬜ Test and CI setup, copied from Concord's `docker-compose.test.yml`, Jest config and `test-backend` workflow.
-4. ⬜ Write the **security and data-minimisation standard** before the first asset model ships (Q9).
+3. ✅ Test database and CI: `docker-compose.test.yml`, Jest global setup, and `.github/workflows/ci.yml` (runs on PRs into `main` only).
+4. ✅ [Security and data-minimisation standard](standards/security.md), written before the first asset model (Q9).
 
 ### 1. MVP: inventory to draft will (no partnerships needed)
 
@@ -57,6 +57,6 @@ Not scheduled until the questions above are answered.
 
 One row per doc in `docs/plans/`.
 
-| Doc                                                                              | Status         | Notes                                                                                           |
-| -------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------- |
-| [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md) | 🟡 In progress | Scaffold built and verified; test DB, CI, security standard and a full `yarn dev` check remain. |
+| Doc                                                                              | Status         | Notes                                                                             |
+| -------------------------------------------------------------------------------- | -------------- | --------------------------------------------------------------------------------- |
+| [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md) | 🟡 In progress | Scaffold, test DB, CI and security standard built; full `yarn dev` check remains. |
