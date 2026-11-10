@@ -25,6 +25,7 @@ import {
 interface ConditionColumns {
   condition_kind: string | null;
   condition_min_age: number | null;
+  condition_days: number | null;
   condition_text: string | null;
   condition_if_unmet: string | null;
   condition_fallback_id: string | null;
@@ -39,16 +40,22 @@ const conditionFromRow = (row: ConditionColumns): GiftCondition | null => {
     fallbackBeneficiaryId: row.condition_fallback_id,
     holderId: row.condition_holder_id,
   };
-  if (row.condition_kind === 'min_age') {
-    return { kind: 'min_age', minAge: row.condition_min_age ?? 0, ...common };
+  const kind = row.condition_kind as GiftCondition['kind'];
+  if (kind === 'min_age') {
+    return { kind, minAge: row.condition_min_age ?? 0, text: row.condition_text, ...common };
   }
-  return { kind: 'other', text: row.condition_text ?? '', ...common };
+  if (kind === 'survives') {
+    return { kind, days: row.condition_days ?? 0, text: row.condition_text, ...common };
+  }
+  if (kind === 'other') return { kind, text: row.condition_text ?? '', ...common };
+  return { kind, text: row.condition_text, ...common };
 };
 
 const conditionToColumns = (condition: GiftCondition | null): ConditionColumns => ({
   condition_kind: condition?.kind ?? null,
   condition_min_age: condition?.kind === 'min_age' ? condition.minAge : null,
-  condition_text: condition?.kind === 'other' ? condition.text : null,
+  condition_days: condition?.kind === 'survives' ? condition.days : null,
+  condition_text: condition?.text ?? null,
   condition_if_unmet: condition?.ifUnmet ?? null,
   condition_fallback_id: condition?.fallbackBeneficiaryId ?? null,
   condition_holder_id: condition?.holderId ?? null,

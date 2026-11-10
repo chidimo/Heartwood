@@ -4,3 +4,4 @@ export * from './inventory';
 export * from './client/allocation-form';
 export * from './client/labels';
 export * from './client/dates';
+export * from './client/asset-labels';

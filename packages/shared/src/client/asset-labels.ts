@@ -1,4 +1,4 @@
-import type { AssetType } from '@heartwood/shared';
+import type { AssetType } from '../asset-types';
 
 export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   cash: 'Cash and bank',

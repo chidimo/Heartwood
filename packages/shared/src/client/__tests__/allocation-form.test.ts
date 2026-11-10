@@ -168,6 +168,29 @@ describe('conditionProblem', () => {
     expect(conditionProblem({ ...valid, minAge }, A)).toBe('Enter an age between 1 and 100.');
   });
 
+  it.each(['', '0', '366', 'abc', '1.5'])('rejects %p days for "outlive me"', days => {
+    const c = { ...valid, kind: 'survives' as const, days };
+    expect(conditionProblem(c, A)).toBe('Enter a number of days between 1 and 365.');
+  });
+
+  it('accepts a valid number of days', () => {
+    expect(conditionProblem({ ...valid, kind: 'survives', days: '30' }, A)).toBeNull();
+  });
+
+  it.each(['marriage', 'education', 'nysc'] as const)(
+    '%s needs nothing else: the note is optional',
+    kind => {
+      expect(conditionProblem({ ...valid, kind }, A)).toBeNull();
+      expect(conditionProblem({ ...valid, kind, text: 'University of Lagos' }, A)).toBeNull();
+    }
+  );
+
+  it('keeps a note under 500 characters', () => {
+    expect(conditionProblem({ ...valid, kind: 'marriage', text: 'x'.repeat(501) }, A)).toBe(
+      'Keep it under 500 characters.'
+    );
+  });
+
   it('needs words for a free-text condition', () => {
     const other = { ...valid, kind: 'other' as const, text: '   ' };
     expect(conditionProblem(other, A)).toBe('Describe what has to happen first.');
@@ -186,12 +209,63 @@ describe('conditionProblem', () => {
   });
 });
 
+describe('conditionToApi for every kind', () => {
+  const holder = { holderId: HOLDER, ifUnmet: 'redistribute', fallbackBeneficiaryId: null };
+
+  it.each([
+    ['marriage', { kind: 'marriage', text: null }],
+    ['education', { kind: 'education', text: null }],
+    ['nysc', { kind: 'nysc', text: null }],
+  ] as const)('%s with no note', (kind, expected) => {
+    expect(conditionToApi({ ...newCondition(HOLDER), kind })).toEqual({ ...expected, ...holder });
+  });
+
+  it('keeps a trimmed note, or none when it is blank', () => {
+    const base = { ...newCondition(HOLDER), kind: 'education' as const };
+    expect(conditionToApi({ ...base, text: '  University of Lagos ' })).toMatchObject({
+      text: 'University of Lagos',
+    });
+    expect(conditionToApi({ ...base, text: '   ' })).toMatchObject({ text: null });
+  });
+
+  it('converts "outlive me" to a number of days, and an age to a number', () => {
+    expect(conditionToApi({ ...newCondition(HOLDER), kind: 'survives', days: '30' })).toMatchObject(
+      {
+        kind: 'survives',
+        days: 30,
+      }
+    );
+    expect(conditionToApi({ ...newCondition(HOLDER), minAge: '21' })).toMatchObject({
+      kind: 'min_age',
+      minAge: 21,
+    });
+  });
+
+  it('round-trips every kind through the saved form', () => {
+    const saved = [
+      { kind: 'marriage' as const, text: 'to someone my executor approves' },
+      { kind: 'education' as const, text: 'University of Lagos' },
+      { kind: 'nysc' as const, text: null },
+      { kind: 'survives' as const, days: 30, text: null },
+      { kind: 'min_age' as const, minAge: 25, text: null },
+      { kind: 'other' as const, text: 'she looks after my mother' },
+    ].map(c => ({ ...c, ...holder, ifUnmet: 'redistribute' as const }));
+    for (const condition of saved) {
+      const form = formFromAllocations([
+        { beneficiaryId: A, sharePercent: 100, specificBequest: null, condition },
+      ]);
+      expect(toAllocationEntries(form)[0].condition).toEqual(condition);
+    }
+  });
+});
+
 describe('conditionToApi', () => {
   it('converts an age condition, dropping a fallback the plan does not use', () => {
     const c = { ...newCondition(HOLDER), minAge: '25', fallbackId: B };
     expect(conditionToApi(c)).toEqual({
       kind: 'min_age',
       minAge: 25,
+      text: null,
       ifUnmet: 'redistribute',
       fallbackBeneficiaryId: null,
       holderId: HOLDER,

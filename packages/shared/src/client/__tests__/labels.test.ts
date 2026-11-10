@@ -1,5 +1,8 @@
-import { INSTITUTION_TYPES, RELATIONSHIPS } from '../../inventory';
+import { CONDITION_KINDS, INSTITUTION_TYPES, RELATIONSHIPS } from '../../inventory';
 import {
+  CONDITION_KIND_OPTIONS,
+  conditionKindHint,
+  conditionNoteLabel,
   conditionSummary,
   INSTITUTION_TYPE_LABELS,
   INSTITUTION_TYPE_OPTIONS,
@@ -120,12 +123,13 @@ describe('contingencyLabel', () => {
 
 describe('conditionSummary', () => {
   const names = { holder: 'Barr. Adeyemi', fallback: 'Chidi Obi' };
+  const base = { minAge: '', days: '', text: '', ifUnmet: 'redistribute' as const };
 
   it('reads as one plain sentence for an age', () => {
     const c = {
+      ...base,
       kind: 'min_age' as const,
       minAge: 25,
-      text: '',
       ifUnmet: 'named_beneficiary' as const,
     };
     expect(conditionSummary(c, names)).toBe(
@@ -133,18 +137,54 @@ describe('conditionSummary', () => {
     );
   });
 
-  it('quotes the free text and describes each fallback plan', () => {
-    const other = {
-      kind: 'other' as const,
-      minAge: '',
-      text: ' she finishes her degree ',
-      ifUnmet: 'redistribute' as const,
-    };
-    expect(conditionSummary(other, names)).toBe(
-      'Only when she finishes her degree. Held by Barr. Adeyemi. If it is not met, it is shared among my other beneficiaries.'
+  it.each([
+    ['marriage', {}, 'Only if they marry'],
+    ['education', {}, 'Only when they finish their education'],
+    ['nysc', {}, 'Only when they complete National Youth Service (NYSC)'],
+    ['survives', { days: 30 }, 'Only if they outlive me by 30 days'],
+    ['survives', { days: '1' }, 'Only if they outlive me by 1 day'],
+    ['other', { text: ' she finishes her degree ' }, 'Only when she finishes her degree'],
+  ] as const)('describes %s', (kind, extra, phrase) => {
+    expect(conditionSummary({ ...base, kind, ...extra }, names)).toBe(
+      `${phrase}. Held by Barr. Adeyemi. If it is not met, it is shared among my other beneficiaries.`
     );
-    expect(conditionSummary({ ...other, ifUnmet: 'residuary' }, names)).toMatch(
+  });
+
+  it('adds the free-text note in brackets, on every kind except "other"', () => {
+    const c = { ...base, kind: 'education' as const, text: ' University of Lagos ' };
+    expect(conditionSummary(c, names)).toBe(
+      'Only when they finish their education (University of Lagos). Held by Barr. Adeyemi. If it is not met, it is shared among my other beneficiaries.'
+    );
+  });
+
+  it('describes each "if unmet" plan', () => {
+    const c = { ...base, kind: 'marriage' as const };
+    expect(conditionSummary({ ...c, ifUnmet: 'residuary' }, names)).toMatch(
       /goes into "everything else"/
     );
+    expect(conditionSummary({ ...c, ifUnmet: 'named_beneficiary' }, names)).toMatch(
+      /goes to Chidi Obi/
+    );
+  });
+});
+
+describe('condition kinds', () => {
+  it('offers every kind the server accepts, each once, with "other" last', () => {
+    const values = CONDITION_KIND_OPTIONS.map(o => o.value);
+    expect(values).toEqual([...CONDITION_KINDS]);
+    expect(new Set(CONDITION_KIND_OPTIONS.map(o => o.label)).size).toBe(CONDITION_KINDS.length);
+    expect(values[values.length - 1]).toBe('other');
+  });
+
+  it('warns that a lawyer will check marriage and free-text conditions only', () => {
+    expect(conditionKindHint('marriage')).toMatch(/lawyer will check/);
+    expect(conditionKindHint('other')).toMatch(/lawyer will check/);
+    expect(conditionKindHint('min_age')).toBeNull();
+  });
+
+  it('asks for the right thing in the note', () => {
+    expect(conditionNoteLabel('education')).toMatch(/course or institution/);
+    expect(conditionNoteLabel('other')).toBe('What has to happen first?');
+    expect(conditionNoteLabel('marriage')).toMatch(/optional/);
   });
 });

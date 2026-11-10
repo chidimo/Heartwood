@@ -600,6 +600,7 @@ describe('inventory', () => {
       expect(res.body[0].condition).toEqual({
         kind: 'min_age',
         minAge: 25,
+        text: null,
         ifUnmet: 'redistribute',
         fallbackBeneficiaryId: null,
         holderId: lawyer.id,
@@ -743,10 +744,92 @@ describe('inventory', () => {
       await expect(bad({ ...ok, condition_holder_id: null })).rejects.toThrow();
       await expect(bad({ ...ok, condition_if_unmet: null })).rejects.toThrow();
       await expect(bad({ ...ok, condition_min_age: null })).rejects.toThrow();
-      await expect(bad({ ...ok, condition_text: 'also text' })).rejects.toThrow();
       await expect(bad({ ...ok, condition_if_unmet: 'named_beneficiary' })).rejects.toThrow();
       await expect(bad({ condition_min_age: 21 })).rejects.toThrow();
+      // The kind decides which numbers belong:
+      await expect(bad({ ...ok, condition_days: 30 })).rejects.toThrow(); // days only for "survives"
+      await expect(bad({ ...ok, condition_kind: 'marriage' })).rejects.toThrow(); // an age only for "min_age"
+      await expect(
+        bad({ ...ok, condition_kind: 'survives', condition_min_age: null })
+      ).rejects.toThrow(); // "survives" needs its days
+      await expect(
+        bad({ ...ok, condition_kind: 'other', condition_min_age: null })
+      ).rejects.toThrow(); // "other" needs its words
+      await expect(bad({ ...ok, condition_kind: 'honesty' })).rejects.toThrow(); // not a kind
       await expect(bad(ok)).resolves.toBeDefined();
+    });
+
+    it.each([
+      { kind: 'marriage' },
+      { kind: 'education', text: 'University of Lagos' },
+      { kind: 'nysc' },
+      { kind: 'survives', days: 30 },
+      { kind: 'min_age', minAge: 18, text: 'or earlier if she marries' },
+      { kind: 'other', text: 'She looks after my mother' },
+    ])('saves and returns %j', async shape => {
+      const { put, ada, lawyer } = await setup();
+      const res = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: { ifUnmet: 'residuary', holderId: lawyer.id, ...shape },
+        },
+      ]);
+      expect(res.status).toBe(200);
+      expect(res.body[0].condition).toMatchObject(shape);
+    });
+
+    it('stores no note as null, and keeps an optional note only on kinds that allow one', async () => {
+      const { put, ada, lawyer } = await setup();
+      const res = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: { kind: 'marriage', ifUnmet: 'residuary', holderId: lawyer.id, text: '   ' },
+        },
+      ]);
+      expect(res.body[0].condition.text).toBeNull();
+    });
+
+    it.each([
+      ['survives with no days', { kind: 'survives' }],
+      ['survives with 0 days', { kind: 'survives', days: 0 }],
+      ['survives with more than a year', { kind: 'survives', days: 366 }],
+      ['survives with fractional days', { kind: 'survives', days: 1.5 }],
+      ['"other" with no words', { kind: 'other' }],
+      ['an unknown kind', { kind: 'honesty' }],
+      ['a note over 500 characters', { kind: 'marriage', text: 'x'.repeat(501) }],
+    ])('rejects %s', async (_label, shape) => {
+      const { put, ada, lawyer } = await setup();
+      const res = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: { ifUnmet: 'residuary', holderId: lawyer.id, ...shape },
+        },
+      ]);
+      expect(res.status).toBe(400);
+    });
+
+    it('a seed-style conditional gift of every kind survives a save and reload together', async () => {
+      const { put, api, asset, ada, chidi, lawyer } = await setup();
+      const both = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 50,
+          condition: { kind: 'nysc', ifUnmet: 'redistribute', holderId: lawyer.id },
+        },
+        {
+          beneficiaryId: chidi.id,
+          sharePercent: 50,
+          condition: { kind: 'survives', days: 30, ifUnmet: 'residuary', holderId: lawyer.id },
+        },
+      ]);
+      expect(both.status).toBe(200);
+      const reloaded = await api.get(`/api/assets/${asset.id}/allocations`);
+      expect(
+        reloaded.body.map((a: { condition: { kind: string } }) => a.condition.kind).sort()
+      ).toEqual(['nysc', 'survives']);
     });
 
     it('saving without a condition clears the old one', async () => {

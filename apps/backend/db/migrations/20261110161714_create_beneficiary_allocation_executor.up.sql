@@ -127,9 +127,12 @@ WHERE
 -- That an asset's shares total 100% is a cross-row rule, enforced in the service.
 --
 -- A gift may carry a condition. Either all of it is set or none of it is:
---   * a kind: a minimum age, or free text for the lawyer to word
+--   * a kind: a minimum age, marriage, finishing education, National Youth Service (NYSC), outliving
+--     the testator by some days, or free text for the lawyer to word
 --   * what happens if it is never met (shared among the others, a named person, or the residuary)
 --   * who holds the asset until it is met (an executor or lawyer contact)
+-- condition_text is the wording for 'other' and an optional note on every other kind (for example
+-- which course or institution).
 CREATE TABLE allocation (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id UUID NOT NULL REFERENCES account (id),
@@ -140,8 +143,18 @@ CREATE TABLE allocation (
     AND share_percent <= 100
   ),
   specific_bequest TEXT CHECK (char_length(specific_bequest) BETWEEN 1 AND 500),
-  condition_kind TEXT CHECK (condition_kind IN ('min_age', 'other')),
+  condition_kind TEXT CHECK (
+    condition_kind IN (
+      'min_age',
+      'marriage',
+      'education',
+      'nysc',
+      'survives',
+      'other'
+    )
+  ),
   condition_min_age SMALLINT CHECK (condition_min_age BETWEEN 1 AND 100),
+  condition_days SMALLINT CHECK (condition_days BETWEEN 1 AND 365),
   condition_text TEXT CHECK (char_length(condition_text) BETWEEN 1 AND 500),
   condition_if_unmet TEXT CHECK (
     condition_if_unmet IN ('redistribute', 'named_beneficiary', 'residuary')
@@ -157,6 +170,7 @@ CREATE TABLE allocation (
     (
       condition_kind IS NULL
       AND condition_min_age IS NULL
+      AND condition_days IS NULL
       AND condition_text IS NULL
       AND condition_if_unmet IS NULL
       AND condition_fallback_id IS NULL
@@ -166,10 +180,9 @@ CREATE TABLE allocation (
       condition_kind IS NOT NULL
       AND condition_if_unmet IS NOT NULL
       AND condition_holder_id IS NOT NULL
-      AND (
-        (condition_kind = 'min_age' AND condition_min_age IS NOT NULL AND condition_text IS NULL)
-        OR (condition_kind = 'other' AND condition_text IS NOT NULL AND condition_min_age IS NULL)
-      )
+      AND (condition_kind = 'min_age') = (condition_min_age IS NOT NULL)
+      AND (condition_kind = 'survives') = (condition_days IS NOT NULL)
+      AND (condition_kind <> 'other' OR condition_text IS NOT NULL)
       AND ((condition_if_unmet = 'named_beneficiary') = (condition_fallback_id IS NOT NULL))
     )
   )

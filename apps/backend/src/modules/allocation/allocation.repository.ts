@@ -18,6 +18,7 @@ export const listAllocations = (db: DbClient, ownerId: string) =>
       'beneficiary_id',
       'condition_kind',
       'condition_min_age',
+      'condition_days',
       'condition_text',
       'condition_if_unmet',
       'condition_fallback_id',
@@ -52,6 +53,7 @@ export const insertAllocation = (
     specific_bequest: string | null;
     condition_kind: string | null;
     condition_min_age: number | null;
+    condition_days: number | null;
     condition_text: string | null;
     condition_if_unmet: string | null;
     condition_fallback_id: string | null;

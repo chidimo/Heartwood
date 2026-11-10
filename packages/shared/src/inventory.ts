@@ -263,7 +263,19 @@ const percent = z
   .max(100)
   .refine(n => Math.round(n * 100) / 100 === n, { message: 'Use at most 2 decimal places' });
 
-export const CONDITION_KINDS = ['min_age', 'other'] as const;
+// The kinds of condition a gift can carry. "other" is free text for the lawyer to word; every other
+// kind may also carry an optional free-text note. Which conditions a Nigerian will can enforce is open
+// question Q18, so the app tells people their lawyer will check the wording.
+export const CONDITION_KINDS = [
+  'min_age',
+  'marriage',
+  'education',
+  'nysc',
+  'survives',
+  'other',
+] as const;
+export type ConditionKind = (typeof CONDITION_KINDS)[number];
+
 export const IF_UNMET_PLANS = ['redistribute', 'named_beneficiary', 'residuary'] as const;
 export type IfUnmetPlan = (typeof IF_UNMET_PLANS)[number];
 
@@ -280,11 +292,28 @@ const conditionCommon = {
   holderId: z.string().uuid(),
 };
 
+const conditionNote = z
+  .string()
+  .trim()
+  .max(500)
+  .nullish()
+  .transform(v => (v ? v : null));
+
 export const giftConditionSchema = z
   .discriminatedUnion('kind', [
     z.object({
       kind: z.literal('min_age'),
       minAge: z.number().int().min(1).max(100),
+      text: conditionNote,
+      ...conditionCommon,
+    }),
+    z.object({ kind: z.literal('marriage'), text: conditionNote, ...conditionCommon }),
+    z.object({ kind: z.literal('education'), text: conditionNote, ...conditionCommon }),
+    z.object({ kind: z.literal('nysc'), text: conditionNote, ...conditionCommon }),
+    z.object({
+      kind: z.literal('survives'),
+      days: z.number().int().min(1).max(365),
+      text: conditionNote,
       ...conditionCommon,
     }),
     z.object({

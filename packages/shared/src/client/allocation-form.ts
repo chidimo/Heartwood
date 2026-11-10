@@ -3,6 +3,7 @@ import {
   residuaryProblem,
   type AllocationDto,
   type AllocationEntry,
+  type ConditionKind,
   type GiftCondition,
   type IfUnmetPlan,
   type ResiduaryEntry,
@@ -15,8 +16,10 @@ export type AllocationMode = 'split' | 'bequest';
 
 /** A condition on one person's gift, as typed. Ages are text until they are checked. */
 export interface ConditionForm {
-  kind: 'min_age' | 'other';
+  kind: ConditionKind;
   minAge: string;
+  days: string;
+  /** The wording for "other"; an optional note on every other kind. */
   text: string;
   ifUnmet: IfUnmetPlan;
   fallbackId: string;
@@ -26,6 +29,7 @@ export interface ConditionForm {
 export const newCondition = (holderId = ''): ConditionForm => ({
   kind: 'min_age',
   minAge: '',
+  days: '',
   text: '',
   ifUnmet: 'redistribute',
   fallbackId: '',
@@ -53,7 +57,8 @@ export const emptyForm: AllocationForm = {
 const conditionFormFromApi = (c: GiftCondition): ConditionForm => ({
   kind: c.kind,
   minAge: c.kind === 'min_age' ? String(c.minAge) : '',
-  text: c.kind === 'other' ? c.text : '',
+  days: c.kind === 'survives' ? String(c.days) : '',
+  text: c.text ?? '',
   ifUnmet: c.ifUnmet,
   fallbackId: c.fallbackBeneficiaryId ?? '',
   holderId: c.holderId,
@@ -79,16 +84,19 @@ export const formFromAllocations = (allocations: AllocationDto[]): AllocationFor
   return { ...emptyForm, conditions, shares };
 };
 
+const whole = (text: string, min: number, max: number): boolean => {
+  const value = Number(text);
+  return /^\d{1,4}$/.test(text.trim()) && value >= min && value <= max;
+};
+
 /** Why a condition can't be saved yet, or null. `personId` is who the gift is for. */
 export const conditionProblem = (c: ConditionForm, personId: string): string | null => {
-  if (c.kind === 'min_age') {
-    const age = Number(c.minAge);
-    if (!/^\d{1,3}$/.test(c.minAge.trim()) || age < 1 || age > 100) {
-      return 'Enter an age between 1 and 100.';
-    }
-  } else if (!c.text.trim()) {
-    return 'Describe what has to happen first.';
+  if (c.kind === 'min_age' && !whole(c.minAge, 1, 100)) return 'Enter an age between 1 and 100.';
+  if (c.kind === 'survives' && !whole(c.days, 1, 365)) {
+    return 'Enter a number of days between 1 and 365.';
   }
+  if (c.kind === 'other' && !c.text.trim()) return 'Describe what has to happen first.';
+  if (c.text.trim().length > 500) return 'Keep it under 500 characters.';
   if (!c.holderId) return 'Choose who will hold it until the condition is met.';
   if (c.ifUnmet === 'named_beneficiary') {
     if (!c.fallbackId) return "Choose who receives it if the condition isn't met.";
@@ -104,8 +112,14 @@ export const conditionToApi = (c: ConditionForm): GiftCondition => {
     fallbackBeneficiaryId: c.ifUnmet === 'named_beneficiary' ? c.fallbackId : null,
     holderId: c.holderId,
   };
-  if (c.kind === 'min_age') return { kind: 'min_age', minAge: Number(c.minAge), ...common };
-  return { kind: 'other', text: c.text.trim(), ...common };
+  const text = c.text.trim();
+  if (c.kind === 'other') return { kind: 'other', text, ...common };
+  const note = text || null;
+  if (c.kind === 'min_age')
+    return { kind: 'min_age', minAge: Number(c.minAge), text: note, ...common };
+  if (c.kind === 'survives')
+    return { kind: 'survives', days: Number(c.days), text: note, ...common };
+  return { kind: c.kind, text: note, ...common };
 };
 
 /** "33.5" -> 33.5, "" -> null (not included), "abc" or 33.333 -> NaN (invalid). */

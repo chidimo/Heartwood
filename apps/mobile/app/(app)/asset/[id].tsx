@@ -6,9 +6,11 @@ import {
   type AllocationForm,
   allocationFormProblem,
   type AllocationMode,
+  ASSET_TYPE_LABELS,
   type AssetDto,
   type BeneficiaryDto,
   type ExecutorDto,
+  formatValue,
   formFromAllocations,
   recipientIds,
   splitEvenly,
@@ -24,7 +26,6 @@ import { Select } from '../../../src/components/select';
 import { SharesEditor } from '../../../src/components/shares-editor';
 import { TextField } from '../../../src/components/text-field';
 import { useAssets } from '../../../src/features/assets/api';
-import { ASSET_TYPE_LABELS, formatValue } from '../../../src/features/assets/labels';
 import {
   useAllocations,
   useBeneficiaries,

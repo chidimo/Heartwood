@@ -3,6 +3,7 @@ import {
   RELATIONSHIPS,
   type BeneficiaryDto,
   type BeneficiaryKind,
+  type ConditionKind,
   type ContingencyPlan,
   type InstitutionType,
   type IfUnmetPlan,
@@ -109,9 +110,29 @@ export const SEVERITY_LABELS: Record<InventoryIssue['severity'], string> = {
 export const SEVERITY_ORDER: InventoryIssue['severity'][] = ['error', 'warning', 'info'];
 
 export const CONDITION_KIND_OPTIONS = [
-  { value: 'min_age', label: 'A minimum age' },
-  { value: 'other', label: 'Something else' },
-] as const;
+  { value: 'min_age', label: 'They reach an age' },
+  { value: 'marriage', label: 'They marry' },
+  { value: 'education', label: 'They finish their education' },
+  { value: 'nysc', label: 'They complete National Youth Service (NYSC)' },
+  { value: 'survives', label: 'They outlive me by a number of days' },
+  { value: 'other', label: 'Something else (describe it)' },
+] as const satisfies readonly { value: ConditionKind; label: string }[];
+
+/** A line of guidance under the kind, or null. */
+export const conditionKindHint = (kind: ConditionKind): string | null => {
+  if (kind === 'marriage') {
+    return 'Your lawyer will check that this kind of condition is allowed before it goes in your will.';
+  }
+  if (kind === 'other') return 'Your lawyer will check the wording.';
+  return null;
+};
+
+/** What the optional free-text note asks for, per kind ("other" has no optional note: its text is the condition). */
+export const conditionNoteLabel = (kind: ConditionKind): string => {
+  if (kind === 'education') return 'Which course or institution? (optional)';
+  if (kind === 'other') return 'What has to happen first?';
+  return 'Anything to add, in your own words? (optional)';
+};
 
 export const IF_UNMET_OPTIONS = [
   { value: 'redistribute', label: 'Share it among my other beneficiaries' },
@@ -131,17 +152,29 @@ const ifUnmetSentence = (plan: IfUnmetPlan, fallbackName: string): string => {
 };
 
 interface ConditionLike {
-  kind: 'min_age' | 'other';
+  kind: ConditionKind;
   minAge: string | number;
-  text: string;
+  days: string | number;
+  text: string | null;
   ifUnmet: IfUnmetPlan;
 }
+
+const conditionPhrase = (c: ConditionLike): string => {
+  if (c.kind === 'min_age') return `Only at age ${c.minAge}`;
+  if (c.kind === 'marriage') return 'Only if they marry';
+  if (c.kind === 'education') return 'Only when they finish their education';
+  if (c.kind === 'nysc') return 'Only when they complete National Youth Service (NYSC)';
+  if (c.kind === 'survives') {
+    return `Only if they outlive me by ${c.days} ${Number(c.days) === 1 ? 'day' : 'days'}`;
+  }
+  return `Only when ${(c.text ?? '').trim()}`;
+};
 
 /** One plain sentence: "Only at age 25. Held by Barr. Adeyemi. If it is not met, it goes to Chidi Obi." */
 export const conditionSummary = (
   c: ConditionLike,
   names: { holder: string; fallback: string }
 ): string => {
-  const what = c.kind === 'min_age' ? `Only at age ${c.minAge}` : `Only when ${c.text.trim()}`;
-  return `${what}. Held by ${names.holder}. If it is not met, ${ifUnmetSentence(c.ifUnmet, names.fallback)}.`;
+  const note = c.kind !== 'other' && c.text?.trim() ? ` (${c.text.trim()})` : '';
+  return `${conditionPhrase(c)}${note}. Held by ${names.holder}. If it is not met, ${ifUnmetSentence(c.ifUnmet, names.fallback)}.`;
 };

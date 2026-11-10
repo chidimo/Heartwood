@@ -1,11 +1,10 @@
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { AssetDto } from '@heartwood/shared';
+import { ASSET_TYPE_LABELS, type AssetDto, formatValue } from '@heartwood/shared';
 import { useAuth } from '../../../src/auth/auth-context';
 import { Button } from '../../../src/components/button';
 import { QueryState } from '../../../src/components/query-state';
 import { useAssets } from '../../../src/features/assets/api';
-import { ASSET_TYPE_LABELS, formatValue } from '../../../src/features/assets/labels';
 
 const AssetRow = ({ asset, onPress }: { asset: AssetDto; onPress: () => void }) => (
   <Pressable

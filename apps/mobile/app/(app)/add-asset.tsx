@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ASSET_TYPES, type AssetType } from '@heartwood/shared';
+import { ASSET_TYPE_LABELS, ASSET_TYPES, type AssetType } from '@heartwood/shared';
 import { errorMessage } from '../../src/api/client';
 import { Button } from '../../src/components/button';
 import { Screen } from '../../src/components/screen';
 import { Select } from '../../src/components/select';
 import { TextField } from '../../src/components/text-field';
 import { useCreateAsset } from '../../src/features/assets/api';
-import { ASSET_TYPE_LABELS } from '../../src/features/assets/labels';
 import { notify } from '../../src/notifications/notify';
 
 const TYPE_OPTIONS = ASSET_TYPES.map(value => ({ value, label: ASSET_TYPE_LABELS[value] }));

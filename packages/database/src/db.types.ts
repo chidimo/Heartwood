@@ -38,6 +38,7 @@ export interface Account {
 export interface Allocation {
   asset_id: string;
   beneficiary_id: string;
+  condition_days: number | null;
   condition_fallback_id: string | null;
   condition_holder_id: string | null;
   condition_if_unmet: string | null;
