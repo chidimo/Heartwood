@@ -54,6 +54,7 @@ Not scheduled until the questions above are answered.
 2. ⬜ Executor role and the death-trigger process, human-initiated (Q7).
 3. ⬜ Review prompts for stale inventories (Q13).
 4. ⬜ Domain, handles and trademark check (Q8).
+5. ⬜ Conditional gifts (age thresholds, things to be done): [plan](plans/2026-11-10-conditional-gifts.md). Blocked on Q18, Q19, Q20.
 
 ## All plans
 
@@ -64,3 +65,4 @@ One row per doc in `docs/plans/`.
 | [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md)     | 🟡 In progress | Scaffold, test DB, CI and security standard built; full `yarn dev` check remains.                                                                                                   |
 | [plans/2026-11-10-auth-and-data-models.md](plans/2026-11-10-auth-and-data-models.md) | 🟡 In progress | Backend (auth, 8 tables, inventory API) and mobile (sign-in, assets, people, allocation editor, residuary, review) done and verified; web client and executor screens to do.        |
 | [plans/2026-11-10-mobile-app-scaffold.md](plans/2026-11-10-mobile-app-scaffold.md)   | 🟡 In progress | `apps/mobile` scaffolded and verified (typecheck, lint, 19 tests, iOS bundle export); runs in the iOS Simulator against the local backend; Android not tried; EAS not set up (Q16). |
+| [plans/2026-11-10-conditional-gifts.md](plans/2026-11-10-conditional-gifts.md)       | ⬜ Not started | Planning only: conditions on a gift need a holder and an "if unmet" plan, and a date of birth for age checks. Waiting on Q18 (what is enforceable), Q19 and Q20.                    |

@@ -73,6 +73,7 @@ export interface AuditLog {
 }
 
 export interface Beneficiary {
+  address: string | null;
   contact: string | null;
   contingency_beneficiary_id: string | null;
   contingency_plan: string | null;

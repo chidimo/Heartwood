@@ -21,6 +21,7 @@ const toDto = (row: Row): BeneficiaryDto => ({
   relationship: row.relationship,
   institutionType: row.institution_type as BeneficiaryDto['institutionType'],
   contact: row.contact,
+  address: row.address,
   contingencyPlan: row.contingency_plan as BeneficiaryDto['contingencyPlan'],
   contingencyBeneficiaryId: row.contingency_beneficiary_id,
   createdAt: row.created_at.toISOString(),
@@ -76,6 +77,7 @@ export const createBeneficiary = (db: DbClient, ownerId: string, input: Benefici
       relationship: input.relationship,
       institution_type: input.institutionType,
       contact: input.contact,
+      address: input.address,
       contingency_plan: input.contingencyPlan,
       contingency_beneficiary_id: input.contingencyBeneficiaryId,
     });
@@ -106,6 +108,7 @@ export const updateBeneficiary = (
       relationship: input.relationship,
       institution_type: input.institutionType,
       contact: input.contact,
+      address: input.address,
       contingency_plan: input.contingencyPlan,
       contingency_beneficiary_id: input.contingencyBeneficiaryId,
     });

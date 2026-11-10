@@ -109,6 +109,7 @@ export const beneficiaryInputSchema = z
       .nullish()
       .transform(v => v ?? null),
     contact: plainOptionalText(200),
+    address: plainOptionalText(500),
     contingencyPlan: contingencyFields.contingencyPlan.default(null),
     contingencyBeneficiaryId: contingencyFields.contingencyBeneficiaryId.default(null),
   })
@@ -134,6 +135,7 @@ export const beneficiaryUpdateSchema = z
     relationship: z.string().trim().min(1).max(100).nullable().optional(),
     institutionType: z.enum(INSTITUTION_TYPES).optional(),
     contact: z.string().trim().max(200).nullable().optional(),
+    address: z.string().trim().max(500).nullable().optional(),
     contingencyPlan: contingencyFields.contingencyPlan.optional(),
     contingencyBeneficiaryId: contingencyFields.contingencyBeneficiaryId.optional(),
   })
@@ -155,6 +157,8 @@ export interface BeneficiaryDto {
   /** What kind of organisation; null for a person. */
   institutionType: InstitutionType | null;
   contact: string | null;
+  /** Where to reach them: free text. */
+  address: string | null;
   contingencyPlan: ContingencyPlan | null;
   contingencyBeneficiaryId: string | null;
   createdAt: string;

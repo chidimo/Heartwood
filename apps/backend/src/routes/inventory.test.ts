@@ -234,6 +234,51 @@ describe('inventory', () => {
     });
   });
 
+  describe('beneficiary addresses', () => {
+    it('are optional, and kept when given', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const without = await newBeneficiary(api);
+      expect(without.address).toBeNull();
+      const withAddress = await newBeneficiary(api, {
+        name: 'Chidi',
+        address: '12 Adeola Odeku Street, Victoria Island, Lagos',
+      });
+      expect(withAddress.address).toBe('12 Adeola Odeku Street, Victoria Island, Lagos');
+    });
+
+    it('can be added, changed and cleared', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const b = await newBeneficiary(api);
+      const added = await api.patch(`/api/beneficiaries/${b.id}`, { address: 'Plot 4, Ikeja' });
+      expect(added.body.address).toBe('Plot 4, Ikeja');
+      const cleared = await api.patch(`/api/beneficiaries/${b.id}`, { address: null });
+      expect(cleared.body.address).toBeNull();
+    });
+
+    it('turns a blank address into none, and refuses an over-long one', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      expect((await newBeneficiary(api, { address: '   ' })).address).toBeNull();
+      const tooLong = await api.post('/api/beneficiaries', {
+        name: 'A',
+        relationship: 'Son',
+        address: 'x'.repeat(501),
+      });
+      expect(tooLong.status).toBe(400);
+      expect(tooLong.body.error).toBe('Invalid address');
+    });
+
+    it('belong to organisations too', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const res = await api.post('/api/beneficiaries', {
+        kind: 'institution',
+        name: 'Grace Chapel',
+        institutionType: 'church',
+        address: 'Allen Avenue, Ikeja',
+      });
+      expect(res.body.address).toBe('Allen Avenue, Ikeja');
+    });
+  });
+
   describe('institutional beneficiaries', () => {
     const church = { kind: 'institution', name: 'Grace Chapel, Ikeja', institutionType: 'church' };
 

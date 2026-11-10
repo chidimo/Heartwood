@@ -9,6 +9,7 @@ const person = (id: string, name: string): BeneficiaryDto => ({
   institutionType: null,
   relationship: 'Child',
   contact: null,
+  address: null,
   contingencyPlan: null,
   contingencyBeneficiaryId: null,
   createdAt: '',

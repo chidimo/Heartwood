@@ -45,6 +45,7 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
     existing?.institutionType ?? 'church'
   );
   const [contact, setContact] = useState(existing?.contact ?? '');
+  const [address, setAddress] = useState(existing?.address ?? '');
   const [plan, setPlan] = useState<ContingencyChoice>(existing?.contingencyPlan ?? 'unset');
   const [fallbackId, setFallbackId] = useState<string>(existing?.contingencyBeneficiaryId ?? '');
 
@@ -71,6 +72,7 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
     const common = {
       name: name.trim(),
       contact: contact.trim() || null,
+      address: address.trim() || null,
       contingencyPlan: plan === 'unset' ? null : plan,
       contingencyBeneficiaryId: needsFallback ? fallbackId : null,
     };
@@ -141,6 +143,13 @@ const BeneficiaryForm = ({ existing, others }: FormProps) => {
         value={contact}
         onChangeText={setContact}
         autoCapitalize="none"
+      />
+      <TextField
+        label="Address (optional)"
+        value={address}
+        onChangeText={setAddress}
+        multiline
+        hint="Where your executor can find them."
       />
       <Select
         label={contingencyQuestion(kind)}
