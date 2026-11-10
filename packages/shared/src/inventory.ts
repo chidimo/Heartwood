@@ -65,6 +65,26 @@ const contingencyConsistent = (v: {
   contingencyBeneficiaryId?: string | null;
 }) => (v.contingencyPlan === 'named_beneficiary') === Boolean(v.contingencyBeneficiaryId);
 
+/** A calendar date as "YYYY-MM-DD", real, not in the future, and after 1900. */
+const isoDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the format YYYY-MM-DD')
+  .refine(value => {
+    const [y, m, d] = value.split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    const real =
+      date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+    return real && y >= 1900 && value <= new Date().toISOString().slice(0, 10);
+  }, 'Enter a real date of birth that is not in the future');
+
+/** Whole years between a "YYYY-MM-DD" birth date and a day. Birthdays count on the day itself. */
+export const ageInYears = (dateOfBirth: string, on: Date = new Date()): number => {
+  const [y, m, d] = dateOfBirth.split('-').map(Number);
+  const years = on.getFullYear() - y;
+  const hadBirthday = on.getMonth() + 1 > m || (on.getMonth() + 1 === m && on.getDate() >= d);
+  return hadBirthday ? years : years - 1;
+};
+
 export const BENEFICIARY_KINDS = ['person', 'institution'] as const;
 export type BeneficiaryKind = (typeof BENEFICIARY_KINDS)[number];
 
@@ -110,6 +130,7 @@ export const beneficiaryInputSchema = z
       .transform(v => v ?? null),
     contact: plainOptionalText(200),
     address: plainOptionalText(500),
+    dateOfBirth: isoDate.nullish().transform(v => v ?? null),
     contingencyPlan: contingencyFields.contingencyPlan.default(null),
     contingencyBeneficiaryId: contingencyFields.contingencyBeneficiaryId.default(null),
   })
@@ -124,6 +145,7 @@ export const beneficiaryInputSchema = z
     }
     if (!v.institutionType) issue('institutionType', 'Choose the kind of organisation');
     if (v.relationship) issue('relationship', 'An organisation has no relationship to you');
+    if (v.dateOfBirth) issue('dateOfBirth', 'An organisation has no date of birth');
     if (v.contingencyPlan === 'pass_to_descendants') issue('contingencyPlan', NO_CHILDREN_MESSAGE);
   });
 export type BeneficiaryInput = z.infer<typeof beneficiaryInputSchema>;
@@ -136,6 +158,7 @@ export const beneficiaryUpdateSchema = z
     institutionType: z.enum(INSTITUTION_TYPES).optional(),
     contact: z.string().trim().max(200).nullable().optional(),
     address: z.string().trim().max(500).nullable().optional(),
+    dateOfBirth: isoDate.nullable().optional(),
     contingencyPlan: contingencyFields.contingencyPlan.optional(),
     contingencyBeneficiaryId: contingencyFields.contingencyBeneficiaryId.optional(),
   })
@@ -159,6 +182,8 @@ export interface BeneficiaryDto {
   contact: string | null;
   /** Where to reach them: free text. */
   address: string | null;
+  /** "YYYY-MM-DD"; people only, and only used to check age conditions. */
+  dateOfBirth: string | null;
   contingencyPlan: ContingencyPlan | null;
   contingencyBeneficiaryId: string | null;
   createdAt: string;
@@ -197,6 +222,47 @@ const percent = z
   .max(100)
   .refine(n => Math.round(n * 100) / 100 === n, { message: 'Use at most 2 decimal places' });
 
+export const CONDITION_KINDS = ['min_age', 'other'] as const;
+export const IF_UNMET_PLANS = ['redistribute', 'named_beneficiary', 'residuary'] as const;
+export type IfUnmetPlan = (typeof IF_UNMET_PLANS)[number];
+
+// What every condition needs besides its kind: what happens if it is never met, and who holds the
+// asset until it is. A gift that waits on something with no holder and no fallback is the kind of
+// dispute this app exists to prevent, so neither is optional.
+const conditionCommon = {
+  ifUnmet: z.enum(IF_UNMET_PLANS),
+  fallbackBeneficiaryId: z
+    .string()
+    .uuid()
+    .nullish()
+    .transform(v => v ?? null),
+  holderId: z.string().uuid(),
+};
+
+export const giftConditionSchema = z
+  .discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('min_age'),
+      minAge: z.number().int().min(1).max(100),
+      ...conditionCommon,
+    }),
+    z.object({
+      kind: z.literal('other'),
+      text: z.string().trim().min(1).max(500),
+      ...conditionCommon,
+    }),
+  ])
+  .superRefine((c, ctx) => {
+    if ((c.ifUnmet === 'named_beneficiary') !== Boolean(c.fallbackBeneficiaryId)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['fallbackBeneficiaryId'],
+        message: 'Name who receives it if the condition is not met, and only then',
+      });
+    }
+  });
+export type GiftCondition = z.infer<typeof giftConditionSchema>;
+
 export const allocationEntrySchema = z
   .object({
     beneficiaryId: z.string().uuid(),
@@ -208,6 +274,7 @@ export const allocationEntrySchema = z
       .max(500)
       .nullish()
       .transform(v => v ?? null),
+    condition: giftConditionSchema.nullish().transform(v => v ?? null),
   })
   .refine(e => (e.sharePercent !== null) !== (e.specificBequest !== null), {
     message: 'Give either a share or a specific bequest',
@@ -258,6 +325,7 @@ export interface AllocationDto {
   beneficiaryId: string;
   sharePercent: number | null;
   specificBequest: string | null;
+  condition: GiftCondition | null;
 }
 
 export type IssueSeverity = 'error' | 'warning' | 'info';
@@ -266,6 +334,8 @@ export type IssueCode =
   | 'asset_unallocated'
   | 'beneficiary_no_contingency'
   | 'beneficiary_unused'
+  | 'gift_age_unverifiable'
+  | 'gift_to_minor_unconditional'
   | 'no_beneficiaries';
 
 export interface InventoryIssue {

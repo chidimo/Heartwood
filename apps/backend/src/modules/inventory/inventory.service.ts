@@ -1,5 +1,6 @@
 import type { DbClient } from '@heartwood/database';
 import {
+  ageInYears,
   allocationProblem,
   residuaryProblem,
   type AllocationEntry,
@@ -16,6 +17,7 @@ import {
 } from '../allocation/allocation.service';
 import { getAsset, listAssets } from '../asset/asset.service';
 import { listBeneficiaries } from '../beneficiary/beneficiary.service';
+import { listExecutors } from '../executor/executor.service';
 
 // Cross-domain operations: this module is allowed to call the asset, beneficiary and allocation
 // services; they don't call each other for these (docs/standards/interactions.md).
@@ -23,6 +25,31 @@ import { listBeneficiaries } from '../beneficiary/beneficiary.service';
 const requireOwnBeneficiaries = async (db: DbClient, ownerId: string, ids: string[]) => {
   const own = new Set((await listBeneficiaries(db, ownerId)).map(b => b.id));
   if (ids.some(id => !own.has(id))) throw unprocessable('Beneficiary not found');
+};
+
+/** A condition's holder must be this person's own executor or lawyer, and its fallback one of their own beneficiaries. */
+const requireValidConditions = async (
+  db: DbClient,
+  ownerId: string,
+  entries: AllocationEntry[]
+) => {
+  const conditioned = entries.filter(e => e.condition !== null);
+  if (conditioned.length === 0) return;
+  const holders = new Set((await listExecutors(db, ownerId)).map(x => x.id));
+  for (const { beneficiaryId, condition } of conditioned) {
+    if (!condition) continue;
+    if (!holders.has(condition.holderId)) throw unprocessable('Holder not found');
+    if (condition.fallbackBeneficiaryId === beneficiaryId) {
+      throw unprocessable('A gift cannot fall back to the person it is for');
+    }
+  }
+  await requireOwnBeneficiaries(
+    db,
+    ownerId,
+    conditioned.flatMap(e =>
+      e.condition?.fallbackBeneficiaryId ? [e.condition.fallbackBeneficiaryId] : []
+    )
+  );
 };
 
 export const getAssetAllocations = async (db: DbClient, ownerId: string, assetId: string) => {
@@ -46,6 +73,7 @@ export const replaceAssetAllocations = (
       ownerId,
       entries.map(e => e.beneficiaryId)
     );
+    await requireValidConditions(trx, ownerId, entries);
     return replaceAllocationRows(trx, ownerId, assetId, entries);
   });
 
@@ -106,6 +134,34 @@ export const getInventoryReport = async (
             message: 'Not allocated and there is no residuary clause to cover it.',
           }
     );
+  }
+
+  const assetsById = new Map(assets.map(a => [a.id, a]));
+  const peopleById = new Map(beneficiaries.map(b => [b.id, b]));
+  for (const gift of coverage.gifts) {
+    const asset = assetsById.get(gift.assetId);
+    const person = peopleById.get(gift.beneficiaryId);
+    if (!asset || !person) continue;
+    if (gift.condition?.kind === 'min_age' && !person.dateOfBirth) {
+      issues.push({
+        code: 'gift_age_unverifiable',
+        severity: 'warning',
+        entity: 'asset',
+        id: asset.id,
+        subject: asset.description,
+        message: `Add ${person.name}'s date of birth so the age condition can be checked.`,
+      });
+    }
+    if (!gift.condition && person.dateOfBirth && ageInYears(person.dateOfBirth) < 18) {
+      issues.push({
+        code: 'gift_to_minor_unconditional',
+        severity: 'warning',
+        entity: 'asset',
+        id: asset.id,
+        subject: asset.description,
+        message: `${person.name} is under 18 and would receive this outright. Consider an age condition.`,
+      });
+    }
   }
 
   for (const b of beneficiaries) {

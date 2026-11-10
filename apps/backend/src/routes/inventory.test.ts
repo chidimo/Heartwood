@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { INSTITUTION_TYPES } from '@heartwood/shared';
+import { INSTITUTION_TYPES, ageInYears } from '@heartwood/shared';
 import { createTestApp, registerTestUser } from '../test-utils/test-app';
 import { useTestDb } from '../test-utils/useTestDb';
 
@@ -453,6 +453,325 @@ describe('inventory', () => {
     });
   });
 
+  describe('gift conditions', () => {
+    const today = new Date();
+    const yearsAgo = (n: number) =>
+      `${today.getFullYear() - n}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+
+    // An asset, two people, and a lawyer to hold things.
+    const setup = async () => {
+      const user = await registerTestUser(app);
+      const api = as(user.bearer);
+      const asset = await newAsset(api);
+      const ada = await newBeneficiary(api, { name: 'Ada' });
+      const chidi = await newBeneficiary(api, { name: 'Chidi' });
+      const lawyer = (await api.post('/api/executors', { kind: 'lawyer', name: 'Barr. Adeyemi' }))
+        .body;
+      const put = (entries: object[]) =>
+        api.put(`/api/assets/${asset.id}/allocations`, { entries });
+      const minAge = (extra: object = {}) => ({
+        kind: 'min_age',
+        minAge: 25,
+        ifUnmet: 'redistribute',
+        holderId: lawyer.id,
+        ...extra,
+      });
+      return { user, api, asset, ada, chidi, lawyer, put, minAge };
+    };
+
+    it('saves a minimum-age condition on a share and returns it', async () => {
+      const { put, ada, minAge, lawyer } = await setup();
+      const res = await put([{ beneficiaryId: ada.id, sharePercent: 100, condition: minAge() }]);
+      expect(res.status).toBe(200);
+      expect(res.body[0].condition).toEqual({
+        kind: 'min_age',
+        minAge: 25,
+        ifUnmet: 'redistribute',
+        fallbackBeneficiaryId: null,
+        holderId: lawyer.id,
+      });
+    });
+
+    it('saves a free-text condition, and one on a specific bequest', async () => {
+      const { put, ada, lawyer } = await setup();
+      const res = await put([
+        {
+          beneficiaryId: ada.id,
+          specificBequest: 'The Camry',
+          condition: {
+            kind: 'other',
+            text: 'When she has finished her degree',
+            ifUnmet: 'residuary',
+            holderId: lawyer.id,
+          },
+        },
+      ]);
+      expect(res.status).toBe(200);
+      expect(res.body[0].condition).toMatchObject({
+        kind: 'other',
+        text: 'When she has finished her degree',
+        ifUnmet: 'residuary',
+      });
+    });
+
+    it('lets "if unmet" name a fallback person, and only then', async () => {
+      const { put, ada, chidi, minAge } = await setup();
+      const named = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: minAge({ ifUnmet: 'named_beneficiary', fallbackBeneficiaryId: chidi.id }),
+        },
+      ]);
+      expect(named.status).toBe(200);
+      expect(named.body[0].condition.fallbackBeneficiaryId).toBe(chidi.id);
+
+      const missing = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: minAge({ ifUnmet: 'named_beneficiary' }),
+        },
+      ]);
+      expect(missing.status).toBe(400);
+      expect(missing.body.error).toMatch(/^Invalid .*fallbackBeneficiaryId: Name who receives it/);
+
+      const stray = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: minAge({ fallbackBeneficiaryId: chidi.id }),
+        },
+      ]);
+      expect(stray.status).toBe(400);
+    });
+
+    it.each([
+      ['an age of 0', { minAge: 0 }],
+      ['an age over 100', { minAge: 101 }],
+      ['a fractional age', { minAge: 24.5 }],
+      ['no holder', { holderId: undefined }],
+      ['an unknown "if unmet" plan', { ifUnmet: 'forfeit' }],
+    ])('rejects %s', async (_label, bad) => {
+      const { put, ada, minAge } = await setup();
+      const res = await put([{ beneficiaryId: ada.id, sharePercent: 100, condition: minAge(bad) }]);
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects an empty free-text condition', async () => {
+      const { put, ada, lawyer } = await setup();
+      const res = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: { kind: 'other', text: '   ', ifUnmet: 'residuary', holderId: lawyer.id },
+        },
+      ]);
+      expect(res.status).toBe(400);
+    });
+
+    it("refuses another user's executor as holder, and another user's person as fallback", async () => {
+      const { put, ada, minAge } = await setup();
+      const bob = as((await registerTestUser(app)).bearer);
+      const bobsLawyer = (await bob.post('/api/executors', { kind: 'lawyer', name: 'Barr. Bello' }))
+        .body;
+      const bobsPerson = await newBeneficiary(bob, { name: 'Bola' });
+      const holder = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: minAge({ holderId: bobsLawyer.id }),
+        },
+      ]);
+      expect(holder.status).toBe(422);
+      expect(holder.body.error).toBe('Holder not found');
+      const fallback = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: minAge({ ifUnmet: 'named_beneficiary', fallbackBeneficiaryId: bobsPerson.id }),
+        },
+      ]);
+      expect(fallback.status).toBe(422);
+    });
+
+    it('refuses a gift that falls back to the person it is for', async () => {
+      const { put, ada, minAge } = await setup();
+      const res = await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: minAge({ ifUnmet: 'named_beneficiary', fallbackBeneficiaryId: ada.id }),
+        },
+      ]);
+      expect(res.status).toBe(422);
+    });
+
+    it('the database refuses a half-filled condition the service never saw', async () => {
+      const { user, asset, ada, lawyer } = await setup();
+      const bad = (values: object) =>
+        db
+          .insertInto('allocation')
+          .values({
+            owner_id: user.account.id,
+            asset_id: asset.id,
+            beneficiary_id: ada.id,
+            share_percent: 100,
+            ...values,
+          } as never)
+          .execute();
+      const ok = {
+        condition_kind: 'min_age',
+        condition_min_age: 21,
+        condition_if_unmet: 'residuary',
+        condition_holder_id: lawyer.id,
+      };
+      await expect(bad({ ...ok, condition_holder_id: null })).rejects.toThrow();
+      await expect(bad({ ...ok, condition_if_unmet: null })).rejects.toThrow();
+      await expect(bad({ ...ok, condition_min_age: null })).rejects.toThrow();
+      await expect(bad({ ...ok, condition_text: 'also text' })).rejects.toThrow();
+      await expect(bad({ ...ok, condition_if_unmet: 'named_beneficiary' })).rejects.toThrow();
+      await expect(bad({ condition_min_age: 21 })).rejects.toThrow();
+      await expect(bad(ok)).resolves.toBeDefined();
+    });
+
+    it('saving without a condition clears the old one', async () => {
+      const { put, api, asset, ada, minAge } = await setup();
+      await put([{ beneficiaryId: ada.id, sharePercent: 100, condition: minAge() }]);
+      await put([{ beneficiaryId: ada.id, sharePercent: 100 }]);
+      const now = await api.get(`/api/assets/${asset.id}/allocations`);
+      expect(now.body[0].condition).toBeNull();
+    });
+
+    it('stops you removing an executor who is holding a gift, until it is released', async () => {
+      const { put, api, ada, lawyer, minAge } = await setup();
+      await put([{ beneficiaryId: ada.id, sharePercent: 100, condition: minAge() }]);
+      const blocked = await api.del(`/api/executors/${lawyer.id}`);
+      expect(blocked.status).toBe(409);
+      await put([{ beneficiaryId: ada.id, sharePercent: 100 }]);
+      expect((await api.del(`/api/executors/${lawyer.id}`)).status).toBe(204);
+    });
+
+    it("stops you removing a person who is a gift's fallback", async () => {
+      const { put, api, ada, chidi, minAge } = await setup();
+      await put([
+        {
+          beneficiaryId: ada.id,
+          sharePercent: 100,
+          condition: minAge({ ifUnmet: 'named_beneficiary', fallbackBeneficiaryId: chidi.id }),
+        },
+      ]);
+      expect((await api.del(`/api/beneficiaries/${chidi.id}`)).status).toBe(409);
+    });
+
+    it('warns when an age condition cannot be checked, and stops once the date of birth is known', async () => {
+      const { put, api, ada, minAge } = await setup();
+      await put([{ beneficiaryId: ada.id, sharePercent: 100, condition: minAge() }]);
+      const codes = async () =>
+        (await api.get('/api/inventory/report')).body.issues.map((i: { code: string }) => i.code);
+      expect(await codes()).toContain('gift_age_unverifiable');
+      await api.patch(`/api/beneficiaries/${ada.id}`, { dateOfBirth: yearsAgo(30) });
+      expect(await codes()).not.toContain('gift_age_unverifiable');
+    });
+
+    it('warns about a gift to someone under 18 with no condition, not once it has one', async () => {
+      const { put, api, ada, minAge } = await setup();
+      await api.patch(`/api/beneficiaries/${ada.id}`, { dateOfBirth: yearsAgo(10) });
+      await put([{ beneficiaryId: ada.id, sharePercent: 100 }]);
+      const report = async () => (await api.get('/api/inventory/report')).body.issues;
+      expect(await report()).toContainEqual(
+        expect.objectContaining({
+          code: 'gift_to_minor_unconditional',
+          severity: 'warning',
+          message: expect.stringContaining('Ada is under 18'),
+        })
+      );
+      await put([{ beneficiaryId: ada.id, sharePercent: 100, condition: minAge() }]);
+      expect((await report()).map((i: { code: string }) => i.code)).not.toContain(
+        'gift_to_minor_unconditional'
+      );
+    });
+
+    it("never warns about an adult's unconditional gift", async () => {
+      const { put, api, ada } = await setup();
+      await api.patch(`/api/beneficiaries/${ada.id}`, { dateOfBirth: yearsAgo(40) });
+      await put([{ beneficiaryId: ada.id, sharePercent: 100 }]);
+      const codes = (await api.get('/api/inventory/report')).body.issues.map(
+        (i: { code: string }) => i.code
+      );
+      expect(codes).not.toContain('gift_to_minor_unconditional');
+    });
+  });
+
+  describe('date of birth', () => {
+    it('is optional and kept exactly as given', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      expect((await newBeneficiary(api)).dateOfBirth).toBeNull();
+      const b = await newBeneficiary(api, { name: 'Chidi', dateOfBirth: '2012-06-15' });
+      expect(b.dateOfBirth).toBe('2012-06-15');
+      expect((await api.get(`/api/beneficiaries/${b.id}`)).body.dateOfBirth).toBe('2012-06-15');
+    });
+
+    it('can be set and cleared on an existing person', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const b = await newBeneficiary(api);
+      const set = await api.patch(`/api/beneficiaries/${b.id}`, { dateOfBirth: '1990-01-31' });
+      expect(set.body.dateOfBirth).toBe('1990-01-31');
+      const cleared = await api.patch(`/api/beneficiaries/${b.id}`, { dateOfBirth: null });
+      expect(cleared.body.dateOfBirth).toBeNull();
+    });
+
+    it.each([
+      ['a date in the future', '2999-01-01'],
+      ['a date that does not exist', '2023-02-30'],
+      ['a date before 1900', '1899-12-31'],
+      ['the wrong format', '15/06/2012'],
+    ])('rejects %s', async (_label, dateOfBirth) => {
+      const api = as((await registerTestUser(app)).bearer);
+      const res = await api.post('/api/beneficiaries', {
+        name: 'A',
+        relationship: 'Son',
+        dateOfBirth,
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/^Invalid dateOfBirth/);
+    });
+
+    it('is for people only', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const create = await api.post('/api/beneficiaries', {
+        kind: 'institution',
+        name: 'Grace Chapel',
+        institutionType: 'church',
+        dateOfBirth: '2000-01-01',
+      });
+      expect(create.status).toBe(400);
+      const org = (
+        await api.post('/api/beneficiaries', {
+          kind: 'institution',
+          name: 'Grace Chapel',
+          institutionType: 'church',
+        })
+      ).body;
+      expect(
+        (await api.patch(`/api/beneficiaries/${org.id}`, { dateOfBirth: '2000-01-01' })).status
+      ).toBe(422);
+    });
+  });
+
+  describe('ageInYears', () => {
+    it.each([
+      ['the day before the birthday', '2000-06-15', new Date(2025, 5, 14), 24],
+      ['on the birthday itself', '2000-06-15', new Date(2025, 5, 15), 25],
+      ['the day after', '2000-06-15', new Date(2025, 5, 16), 25],
+      ['an earlier month', '2000-06-15', new Date(2025, 0, 1), 24],
+      ['a later month', '2000-06-15', new Date(2025, 11, 31), 25],
+      ['a baby', '2025-01-01', new Date(2025, 5, 1), 0],
+    ])('%s', (_label, dob, on, expected) => {
+      expect(ageInYears(dob, on)).toBe(expected);
+    });
+  });
+
   describe('allocations', () => {
     it('accepts shares that total exactly 100%', async () => {
       const api = as((await registerTestUser(app)).bearer);
@@ -556,7 +875,7 @@ describe('inventory', () => {
       });
       const current = await api.get(`/api/assets/${asset.id}/allocations`);
       expect(current.body).toEqual([
-        { beneficiaryId: a.id, sharePercent: 100, specificBequest: null },
+        { beneficiaryId: a.id, sharePercent: 100, specificBequest: null, condition: null },
       ]);
     });
 

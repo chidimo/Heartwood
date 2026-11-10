@@ -1,6 +1,7 @@
 import type { DbClient } from '@heartwood/database';
 import type { ExecutorDto, ExecutorInput, ExecutorUpdate } from '@heartwood/shared';
-import { notFoundError } from '../../utils/http-error';
+import { conflict, notFoundError } from '../../utils/http-error';
+import { executorHoldsGifts } from '../allocation/allocation.service';
 import { recordAudit } from '../audit/audit.service';
 import {
   insertExecutor,
@@ -55,6 +56,11 @@ export const updateExecutor = (db: DbClient, ownerId: string, id: string, input:
 
 export const deleteExecutor = (db: DbClient, ownerId: string, id: string) =>
   db.transaction().execute(async trx => {
+    if (await executorHoldsGifts(trx, ownerId, id)) {
+      throw conflict(
+        'This person is holding a gift until a condition is met. Choose another holder first.'
+      );
+    }
     if (!(await softDeleteExecutor(trx, ownerId, id, ownerId))) {
       throw notFoundError('Executor not found');
     }

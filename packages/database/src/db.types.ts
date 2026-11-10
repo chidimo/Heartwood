@@ -38,6 +38,12 @@ export interface Account {
 export interface Allocation {
   asset_id: string;
   beneficiary_id: string;
+  condition_fallback_id: string | null;
+  condition_holder_id: string | null;
+  condition_if_unmet: string | null;
+  condition_kind: string | null;
+  condition_min_age: number | null;
+  condition_text: string | null;
   created_at: Generated<Timestamp>;
   deleted_at: Timestamp | null;
   deleted_by: string | null;
@@ -78,6 +84,7 @@ export interface Beneficiary {
   contingency_beneficiary_id: string | null;
   contingency_plan: string | null;
   created_at: Generated<Timestamp>;
+  date_of_birth: Timestamp | null;
   deleted_at: Timestamp | null;
   deleted_by: string | null;
   id: Generated<string>;

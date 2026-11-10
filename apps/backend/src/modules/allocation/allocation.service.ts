@@ -1,8 +1,14 @@
 import type { DbClient } from '@heartwood/database';
-import type { AllocationDto, AllocationEntry, ResiduaryEntry } from '@heartwood/shared';
+import type {
+  AllocationDto,
+  AllocationEntry,
+  GiftCondition,
+  ResiduaryEntry,
+} from '@heartwood/shared';
 import { recordAudit } from '../audit/audit.service';
 import {
   countBeneficiaryReferences,
+  countGiftsHeldBy,
   insertAllocation,
   insertResiduary,
   listAllocations,
@@ -16,14 +22,49 @@ import {
 // the shares are valid, is checked by the caller (modules/inventory), so this module depends on no
 // other domain.
 
-const toDto = (row: {
-  beneficiary_id: string;
-  share_percent: string | null;
-  specific_bequest: string | null;
-}): AllocationDto => ({
+interface ConditionColumns {
+  condition_kind: string | null;
+  condition_min_age: number | null;
+  condition_text: string | null;
+  condition_if_unmet: string | null;
+  condition_fallback_id: string | null;
+  condition_holder_id: string | null;
+}
+
+/** The condition columns as the API shape, or null when the gift has none (the DB keeps them all-or-nothing). */
+const conditionFromRow = (row: ConditionColumns): GiftCondition | null => {
+  if (!row.condition_kind || !row.condition_if_unmet || !row.condition_holder_id) return null;
+  const common = {
+    ifUnmet: row.condition_if_unmet as GiftCondition['ifUnmet'],
+    fallbackBeneficiaryId: row.condition_fallback_id,
+    holderId: row.condition_holder_id,
+  };
+  if (row.condition_kind === 'min_age') {
+    return { kind: 'min_age', minAge: row.condition_min_age ?? 0, ...common };
+  }
+  return { kind: 'other', text: row.condition_text ?? '', ...common };
+};
+
+const conditionToColumns = (condition: GiftCondition | null): ConditionColumns => ({
+  condition_kind: condition?.kind ?? null,
+  condition_min_age: condition?.kind === 'min_age' ? condition.minAge : null,
+  condition_text: condition?.kind === 'other' ? condition.text : null,
+  condition_if_unmet: condition?.ifUnmet ?? null,
+  condition_fallback_id: condition?.fallbackBeneficiaryId ?? null,
+  condition_holder_id: condition?.holderId ?? null,
+});
+
+const toDto = (
+  row: {
+    beneficiary_id: string;
+    share_percent: string | null;
+    specific_bequest: string | null;
+  } & ConditionColumns
+): AllocationDto => ({
   beneficiaryId: row.beneficiary_id,
   sharePercent: row.share_percent === null ? null : Number(row.share_percent),
   specificBequest: row.specific_bequest,
+  condition: conditionFromRow(row),
 });
 
 export const getAllocations = async (db: DbClient, ownerId: string, assetId: string) =>
@@ -44,6 +85,7 @@ export const replaceAllocationRows = async (
       beneficiary_id: e.beneficiaryId,
       share_percent: e.sharePercent,
       specific_bequest: e.specificBequest,
+      ...conditionToColumns(e.condition),
     });
   }
   await recordAudit(db, {
@@ -99,6 +141,9 @@ export const replaceResiduaryRows = async (
   return getResiduary(db, ownerId);
 };
 
+export const executorHoldsGifts = async (db: DbClient, ownerId: string, id: string) =>
+  (await countGiftsHeldBy(db, ownerId, id)) > 0;
+
 export const beneficiaryIsAllocated = async (db: DbClient, ownerId: string, id: string) =>
   (await countBeneficiaryReferences(db, ownerId, id)) > 0;
 
@@ -109,6 +154,11 @@ export const allocationCoverage = async (db: DbClient, ownerId: string) => {
     getResiduary(db, ownerId),
   ]);
   return {
+    gifts: rows.map(r => ({
+      assetId: r.asset_id,
+      beneficiaryId: r.beneficiary_id,
+      condition: conditionFromRow(r),
+    })),
     allocatedAssetIds: new Set(rows.map(r => r.asset_id)),
     receivingBeneficiaryIds: new Set([
       ...rows.map(r => r.beneficiary_id),

@@ -14,6 +14,15 @@ import {
 
 type Row = Awaited<ReturnType<typeof findBeneficiary>> & object;
 
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** A DATE column as "YYYY-MM-DD". pg returns it as a local-midnight Date, so read it back with local fields. */
+const dateOnly = (value: Date | string | null): string | null => {
+  if (value === null) return null;
+  if (typeof value === 'string') return value.slice(0, 10);
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+};
+
 const toDto = (row: Row): BeneficiaryDto => ({
   id: row.id,
   kind: row.kind as BeneficiaryDto['kind'],
@@ -22,6 +31,7 @@ const toDto = (row: Row): BeneficiaryDto => ({
   institutionType: row.institution_type as BeneficiaryDto['institutionType'],
   contact: row.contact,
   address: row.address,
+  dateOfBirth: dateOnly(row.date_of_birth),
   contingencyPlan: row.contingency_plan as BeneficiaryDto['contingencyPlan'],
   contingencyBeneficiaryId: row.contingency_beneficiary_id,
   createdAt: row.created_at.toISOString(),
@@ -47,6 +57,7 @@ const checkFitsKind = (kind: string, currentPlan: string | null, input: Benefici
     return;
   }
   if (input.relationship) throw unprocessable('An organisation has no relationship to you');
+  if (input.dateOfBirth) throw unprocessable('An organisation has no date of birth');
   const plan = input.contingencyPlan === undefined ? currentPlan : input.contingencyPlan;
   if (plan === 'pass_to_descendants') {
     throw unprocessable('An organisation has no children to pass a gift to');
@@ -78,6 +89,7 @@ export const createBeneficiary = (db: DbClient, ownerId: string, input: Benefici
       institution_type: input.institutionType,
       contact: input.contact,
       address: input.address,
+      date_of_birth: input.dateOfBirth,
       contingency_plan: input.contingencyPlan,
       contingency_beneficiary_id: input.contingencyBeneficiaryId,
     });
@@ -109,6 +121,7 @@ export const updateBeneficiary = (
       institution_type: input.institutionType,
       contact: input.contact,
       address: input.address,
+      date_of_birth: input.dateOfBirth,
       contingency_plan: input.contingencyPlan,
       contingency_beneficiary_id: input.contingencyBeneficiaryId,
     });

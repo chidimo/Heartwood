@@ -28,6 +28,7 @@ export const insertBeneficiary = (
     institution_type: string | null;
     contact: string | null;
     address: string | null;
+    date_of_birth: string | null;
     contingency_plan: string | null;
     contingency_beneficiary_id: string | null;
   }
@@ -43,6 +44,7 @@ export const updateBeneficiary = (
     institution_type: string;
     contact: string | null;
     address: string | null;
+    date_of_birth: string | null;
     contingency_plan: string | null;
     contingency_beneficiary_id: string | null;
   }>
