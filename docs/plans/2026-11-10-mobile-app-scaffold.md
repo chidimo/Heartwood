@@ -2,7 +2,7 @@
 
 Created: 2026-11-10
 
-Status: In progress — scaffold built and verified without a device. Not yet run in a simulator or on a phone; EAS not set up.
+Status: In progress — scaffold built and running in the iOS Simulator. Android not tried; EAS not set up.
 
 Owner: Chidi Orji <orjichidi95@gmail.com>
 
@@ -24,7 +24,7 @@ An Expo app in `apps/mobile` that runs end to end against the backend with no pr
 
 ## Remaining
 
-- [ ] Run on the iOS Simulator and an Android device or emulator: home screen renders, API status shows "ok" against a local backend (physical phone needs the computer's LAN IP, handled by `resolveApiUrl`).
+- [x] iOS Simulator (iPhone 17, Expo Go, SDK 57): home screen renders and shows "API status: ok" from the local backend (verified 2026-11-10). Android device or emulator not yet tried.
 - [ ] App icon and splash assets (none yet; Expo defaults are used).
 - [ ] Real brand palette in `tailwind.config.js` (placeholder green now).
 - [ ] EAS project, bundle ID and store accounts (Q16); set `runtimeVersion` to the fingerprint policy at that point.

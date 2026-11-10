@@ -59,7 +59,7 @@ Not scheduled until the questions above are answered.
 
 One row per doc in `docs/plans/`.
 
-| Doc                                                                                | Status         | Notes                                                                                                                                             |
-| ---------------------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md)   | 🟡 In progress | Scaffold, test DB, CI and security standard built; full `yarn dev` check remains.                                                                 |
-| [plans/2026-11-10-mobile-app-scaffold.md](plans/2026-11-10-mobile-app-scaffold.md) | 🟡 In progress | `apps/mobile` scaffolded and verified (typecheck, lint, 19 tests, iOS bundle export); not yet run on a simulator or device; EAS not set up (Q16). |
+| Doc                                                                                | Status         | Notes                                                                                                                                                                               |
+| ---------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [plans/2026-11-10-workspace-scaffold.md](plans/2026-11-10-workspace-scaffold.md)   | 🟡 In progress | Scaffold, test DB, CI and security standard built; full `yarn dev` check remains.                                                                                                   |
+| [plans/2026-11-10-mobile-app-scaffold.md](plans/2026-11-10-mobile-app-scaffold.md) | 🟡 In progress | `apps/mobile` scaffolded and verified (typecheck, lint, 19 tests, iOS bundle export); runs in the iOS Simulator against the local backend; Android not tried; EAS not set up (Q16). |
