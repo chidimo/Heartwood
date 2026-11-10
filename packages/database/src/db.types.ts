@@ -75,7 +75,7 @@ export interface AuditLog {
 export interface Beneficiary {
   contact: string | null;
   contingency_beneficiary_id: string | null;
-  contingency_plan: Generated<string>;
+  contingency_plan: string | null;
   created_at: Generated<Timestamp>;
   deleted_at: Timestamp | null;
   deleted_by: string | null;

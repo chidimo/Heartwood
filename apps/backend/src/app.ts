@@ -6,6 +6,7 @@ import morganMiddleware from './middleware/morgan.middleware';
 import { errorHandler } from './middleware/error-handler';
 import { createAuthRoutes } from './routes/auth';
 import { createHealthRoutes } from './routes/health';
+import { createInventoryRoutes } from './routes/inventory';
 
 interface AppDeps {
   db: DbClient;
@@ -31,6 +32,7 @@ export function createApp({ db, authSecret, authLimit }: AppDeps) {
 
   app.use('/api/health', createHealthRoutes(db));
   app.use('/api/auth', createAuthRoutes(db, { authSecret, authLimit }));
+  app.use('/api', createInventoryRoutes(db, authSecret));
 
   app.use(errorHandler);
   return app;

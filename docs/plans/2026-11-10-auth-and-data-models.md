@@ -25,27 +25,32 @@ Checklist. One item at a time; commit each. Tests are written with the code, not
 - Executor and lawyer are plain contact records on the testator's profile, not accounts (Q12).
 - Allocation shares are validated in the service, not the database, because a sum across rows can't be a column constraint. Asset allocations must total exactly 100.00% or be a single specific bequest.
 - Flagging assets that may fall under customary or religious law (Q5) is a later item; nothing blocks or auto-corrects.
+- Cross-domain work (replace an asset's allocation, the report) lives in `modules/inventory`, which calls the asset, beneficiary and allocation services; those don't call each other for it, so there are no import cycles.
 
 ## Checklist
 
 ### Data models
-- [ ] Migrations: `account` and `refresh_token`
-- [ ] Migrations: `asset`
-- [ ] Migrations: `beneficiary` (with contingency), `allocation`, `residuary_allocation`, `executor`
-- [ ] Migration: `audit_log`
-- [ ] Regenerate Kysely types (`yarn db:codegen`)
+
+- [x] Migrations: `account` and `refresh_token`
+- [x] Migrations: `asset`
+- [x] Migrations: `beneficiary` (with contingency, nullable so "not chosen" can be flagged), `allocation`, `residuary_allocation`, `executor`
+- [x] Migration: `audit_log`. All eight tables applied, every `.down.sql` run in reverse and re-applied (verified 2026-11-10)
+- [x] Regenerate Kysely types (`packages/database/src/db.types.ts`)
 
 ### Authentication (backend)
-- [ ] Register, login, refresh (rotating), logout, `GET /me`; auth middleware; login rate limit
-- [ ] Tests: happy paths, wrong password, duplicate email, expired/revoked refresh, rate limit
+
+- [x] Register, login, refresh (rotating, reuse revokes the family), logout, `GET /api/auth/me`; auth middleware; rate limit on login and register (10 per 15 min per IP)
+- [x] Tests: happy paths, wrong password and unknown email give the same error, duplicate email, expired/revoked/reused refresh, rate limit, hashes stored not secrets
 
 ### Inventory (backend)
-- [ ] Assets CRUD, owner-scoped, soft delete, audited
-- [ ] Beneficiaries CRUD with contingency rules
-- [ ] Allocations + residuary + validation report (sums, uncovered assets, beneficiaries without contingency)
-- [ ] Executor
-- [ ] Tests per resource: a second user cannot read or change the first user's record
+
+- [x] Assets CRUD, owner-scoped, soft delete, audited. Free text refuses 10+ digit runs (account numbers)
+- [x] Beneficiaries CRUD with contingency rules; delete refused while allocated or someone's fallback
+- [x] Allocations (shares total exactly 100% or one specific bequest) + residuary + `GET /api/inventory/report`
+- [x] Executor
+- [x] Tests per resource: a second user gets 404 on read, update and delete. 55 backend tests pass (verified 2026-11-10)
 
 ### Clients
+
 - [ ] Mobile: sign-in, asset list and add; verified in the iOS Simulator
 - [ ] Web: sign-in, asset list and add
