@@ -233,6 +233,167 @@ describe('inventory', () => {
     });
   });
 
+  describe('institutional beneficiaries', () => {
+    const church = { kind: 'institution', name: 'Grace Chapel, Ikeja', institutionType: 'church' };
+
+    it('creates an organisation: it has a type and no relationship', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const res = await api.post('/api/beneficiaries', church);
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({
+        kind: 'institution',
+        institutionType: 'church',
+        relationship: null,
+        name: 'Grace Chapel, Ikeja',
+      });
+    });
+
+    it('still creates a person by default, with no type', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const person = await newBeneficiary(api);
+      expect(person).toMatchObject({
+        kind: 'person',
+        institutionType: null,
+        relationship: 'Daughter',
+      });
+    });
+
+    it.each([
+      [
+        'an organisation without a type',
+        { ...church, institutionType: undefined },
+        'Invalid institutionType: Choose the kind of organisation',
+      ],
+      [
+        'an organisation with a relationship',
+        { ...church, relationship: 'Cousin' },
+        'Invalid relationship: An organisation has no relationship to you',
+      ],
+      [
+        'an organisation passing to children',
+        { ...church, contingencyPlan: 'pass_to_descendants' },
+        'Invalid contingencyPlan: An organisation has no children to pass a gift to',
+      ],
+      [
+        'a person without a relationship',
+        { name: 'Ada', kind: 'person' },
+        'Invalid relationship: Say how this person is related to you',
+      ],
+      [
+        'a person with an organisation type',
+        { name: 'Ada', relationship: 'Aunt', institutionType: 'church' },
+        'Invalid institutionType: Only an organisation has a type',
+      ],
+    ])('rejects %s', async (_label, body, message) => {
+      const api = as((await registerTestUser(app)).bearer);
+      const res = await api.post('/api/beneficiaries', body);
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe(message);
+    });
+
+    it('the database refuses a row the service never saw', async () => {
+      const user = await registerTestUser(app);
+      const bad = (values: object) =>
+        db
+          .insertInto('beneficiary')
+          .values({ owner_id: user.account.id, name: 'X', ...values } as never)
+          .execute();
+      await expect(
+        bad({ kind: 'institution', institution_type: 'church', relationship: 'Cousin' })
+      ).rejects.toThrow();
+      await expect(bad({ kind: 'institution', institution_type: null })).rejects.toThrow();
+      await expect(
+        bad({ kind: 'person', relationship: 'Son', institution_type: 'church' })
+      ).rejects.toThrow();
+      await expect(
+        bad({
+          kind: 'institution',
+          institution_type: 'church',
+          contingency_plan: 'pass_to_descendants',
+        })
+      ).rejects.toThrow();
+    });
+
+    it('can receive a share of an asset and of the residuary', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const asset = await newAsset(api);
+      const org = (await api.post('/api/beneficiaries', church)).body;
+      const person = await newBeneficiary(api);
+      const split = await api.put(`/api/assets/${asset.id}/allocations`, {
+        entries: [
+          { beneficiaryId: org.id, sharePercent: 10 },
+          { beneficiaryId: person.id, sharePercent: 90 },
+        ],
+      });
+      expect(split.status).toBe(200);
+      const rest = await api.put('/api/residuary', {
+        entries: [{ beneficiaryId: org.id, sharePercent: 100 }],
+      });
+      expect(rest.status).toBe(200);
+    });
+
+    it('can be a named fallback, and can name a person as theirs', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const org = (await api.post('/api/beneficiaries', church)).body;
+      const person = await newBeneficiary(api, {
+        contingencyPlan: 'named_beneficiary',
+        contingencyBeneficiaryId: org.id,
+      });
+      expect(person.contingencyBeneficiaryId).toBe(org.id);
+      const orgWithFallback = await api.patch(`/api/beneficiaries/${org.id}`, {
+        contingencyPlan: 'named_beneficiary',
+        contingencyBeneficiaryId: person.id,
+      });
+      expect(orgWithFallback.status).toBe(200);
+    });
+
+    it('can be renamed and retyped, but never gains a relationship or a "pass to children" plan', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const org = (await api.post('/api/beneficiaries', church)).body;
+      const renamed = await api.patch(`/api/beneficiaries/${org.id}`, {
+        name: 'Grace Chapel International',
+        institutionType: 'charity',
+      });
+      expect(renamed.body).toMatchObject({
+        name: 'Grace Chapel International',
+        institutionType: 'charity',
+      });
+      expect(
+        (await api.patch(`/api/beneficiaries/${org.id}`, { relationship: 'Cousin' })).status
+      ).toBe(422);
+      const children = await api.patch(`/api/beneficiaries/${org.id}`, {
+        contingencyPlan: 'pass_to_descendants',
+      });
+      expect(children.status).toBe(422);
+    });
+
+    it('a person cannot be turned into an organisation or lose their relationship', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const person = await newBeneficiary(api);
+      expect(
+        (await api.patch(`/api/beneficiaries/${person.id}`, { institutionType: 'church' })).status
+      ).toBe(422);
+      expect(
+        (await api.patch(`/api/beneficiaries/${person.id}`, { relationship: null })).status
+      ).toBe(422);
+    });
+
+    it("words the report for an organisation, and hides another user's", async () => {
+      const alice = as((await registerTestUser(app)).bearer);
+      const bob = as((await registerTestUser(app)).bearer);
+      await alice.post('/api/beneficiaries', church);
+      const issues = (await alice.get('/api/inventory/report')).body.issues;
+      expect(issues).toContainEqual(
+        expect.objectContaining({
+          code: 'beneficiary_no_contingency',
+          subject: 'Grace Chapel, Ikeja',
+          message: 'No plan for if this organisation no longer exists.',
+        })
+      );
+      expect((await bob.get('/api/beneficiaries')).body).toEqual([]);
+    });
+  });
+
   describe('allocations', () => {
     it('accepts shares that total exactly 100%', async () => {
       const api = as((await registerTestUser(app)).bearer);

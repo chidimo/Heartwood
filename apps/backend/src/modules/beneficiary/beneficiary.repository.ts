@@ -22,8 +22,10 @@ export const insertBeneficiary = (
   db: DbClient,
   values: {
     owner_id: string;
+    kind: string;
     name: string;
-    relationship: string;
+    relationship: string | null;
+    institution_type: string | null;
     contact: string | null;
     contingency_plan: string | null;
     contingency_beneficiary_id: string | null;
@@ -36,7 +38,8 @@ export const updateBeneficiary = (
   id: string,
   values: Partial<{
     name: string;
-    relationship: string;
+    relationship: string | null;
+    institution_type: string;
     contact: string | null;
     contingency_plan: string | null;
     contingency_beneficiary_id: string | null;

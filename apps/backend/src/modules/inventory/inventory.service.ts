@@ -116,7 +116,10 @@ export const getInventoryReport = async (
         entity: 'beneficiary',
         id: b.id,
         subject: b.name,
-        message: 'No plan for if this beneficiary dies before you.',
+        message:
+          b.kind === 'institution'
+            ? 'No plan for if this organisation no longer exists.'
+            : 'No plan for if this beneficiary dies before you.',
       });
     }
     if (!coverage.receivingBeneficiaryIds.has(b.id)) {

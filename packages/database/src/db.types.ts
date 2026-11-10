@@ -80,9 +80,11 @@ export interface Beneficiary {
   deleted_at: Timestamp | null;
   deleted_by: string | null;
   id: Generated<string>;
+  institution_type: string | null;
+  kind: Generated<string>;
   name: string;
   owner_id: string;
-  relationship: string;
+  relationship: string | null;
   updated_at: Generated<Timestamp>;
 }
 

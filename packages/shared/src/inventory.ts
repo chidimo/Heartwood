@@ -65,29 +65,57 @@ const contingencyConsistent = (v: {
   contingencyBeneficiaryId?: string | null;
 }) => (v.contingencyPlan === 'named_beneficiary') === Boolean(v.contingencyBeneficiaryId);
 
+export const BENEFICIARY_KINDS = ['person', 'institution'] as const;
+export type BeneficiaryKind = (typeof BENEFICIARY_KINDS)[number];
+
+export const INSTITUTION_TYPES = ['church', 'mosque', 'charity', 'school', 'other'] as const;
+export type InstitutionType = (typeof INSTITUTION_TYPES)[number];
+
+const plainOptionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullish()
+    .transform(v => (v ? v : null));
+
+const FALLBACK_MESSAGE = 'A fallback beneficiary goes with the "named beneficiary" plan only';
+const NO_CHILDREN_MESSAGE = 'An organisation has no children to pass a gift to';
+
 export const beneficiaryInputSchema = z
   .object({
+    kind: z.enum(BENEFICIARY_KINDS).default('person'),
     name: plainText(200),
-    relationship: plainText(100),
-    contact: z
-      .string()
-      .trim()
-      .max(200)
+    relationship: plainOptionalText(100),
+    institutionType: z
+      .enum(INSTITUTION_TYPES)
       .nullish()
-      .transform(v => (v ? v : null)),
+      .transform(v => v ?? null),
+    contact: plainOptionalText(200),
     contingencyPlan: contingencyFields.contingencyPlan.default(null),
     contingencyBeneficiaryId: contingencyFields.contingencyBeneficiaryId.default(null),
   })
-  .refine(contingencyConsistent, {
-    message: 'A fallback beneficiary goes with the "named beneficiary" plan only',
-    path: ['contingencyBeneficiaryId'],
+  .superRefine((v, ctx) => {
+    const issue = (path: string, message: string) =>
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
+    if (!contingencyConsistent(v)) issue('contingencyBeneficiaryId', FALLBACK_MESSAGE);
+    if (v.kind === 'person') {
+      if (!v.relationship) issue('relationship', 'Say how this person is related to you');
+      if (v.institutionType) issue('institutionType', 'Only an organisation has a type');
+      return;
+    }
+    if (!v.institutionType) issue('institutionType', 'Choose the kind of organisation');
+    if (v.relationship) issue('relationship', 'An organisation has no relationship to you');
+    if (v.contingencyPlan === 'pass_to_descendants') issue('contingencyPlan', NO_CHILDREN_MESSAGE);
   });
 export type BeneficiaryInput = z.infer<typeof beneficiaryInputSchema>;
 
+// The kind of an existing beneficiary can't change; the server checks the rest against it.
 export const beneficiaryUpdateSchema = z
   .object({
     name: plainText(200).optional(),
-    relationship: plainText(100).optional(),
+    relationship: z.string().trim().min(1).max(100).nullable().optional(),
+    institutionType: z.enum(INSTITUTION_TYPES).optional(),
     contact: z.string().trim().max(200).nullable().optional(),
     contingencyPlan: contingencyFields.contingencyPlan.optional(),
     contingencyBeneficiaryId: contingencyFields.contingencyBeneficiaryId.optional(),
@@ -97,17 +125,18 @@ export const beneficiaryUpdateSchema = z
       v.contingencyPlan === undefined && v.contingencyBeneficiaryId === undefined
         ? true
         : contingencyConsistent(v),
-    {
-      message: 'A fallback beneficiary goes with the "named beneficiary" plan only',
-      path: ['contingencyBeneficiaryId'],
-    }
+    { message: FALLBACK_MESSAGE, path: ['contingencyBeneficiaryId'] }
   );
 export type BeneficiaryUpdate = z.infer<typeof beneficiaryUpdateSchema>;
 
 export interface BeneficiaryDto {
   id: string;
+  kind: BeneficiaryKind;
   name: string;
-  relationship: string;
+  /** How a person is related to the testator; null for an organisation. */
+  relationship: string | null;
+  /** What kind of organisation; null for a person. */
+  institutionType: InstitutionType | null;
   contact: string | null;
   contingencyPlan: ContingencyPlan | null;
   contingencyBeneficiaryId: string | null;

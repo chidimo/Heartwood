@@ -16,8 +16,10 @@ type Row = Awaited<ReturnType<typeof findBeneficiary>> & object;
 
 const toDto = (row: Row): BeneficiaryDto => ({
   id: row.id,
+  kind: row.kind as BeneficiaryDto['kind'],
   name: row.name,
   relationship: row.relationship,
+  institutionType: row.institution_type as BeneficiaryDto['institutionType'],
   contact: row.contact,
   contingencyPlan: row.contingency_plan as BeneficiaryDto['contingencyPlan'],
   contingencyBeneficiaryId: row.contingency_beneficiary_id,
@@ -32,6 +34,22 @@ export const getBeneficiary = async (db: DbClient, ownerId: string, id: string) 
   const row = await findBeneficiary(db, ownerId, id);
   if (!row) throw notFoundError('Beneficiary not found');
   return toDto(row);
+};
+
+/** An update must keep a person a person and an organisation an organisation (the kind never changes). */
+const checkFitsKind = (kind: string, currentPlan: string | null, input: BeneficiaryUpdate) => {
+  if (kind === 'person') {
+    if (input.institutionType !== undefined) {
+      throw unprocessable('Only an organisation has a type');
+    }
+    if (input.relationship === null) throw unprocessable('Say how this person is related to you');
+    return;
+  }
+  if (input.relationship) throw unprocessable('An organisation has no relationship to you');
+  const plan = input.contingencyPlan === undefined ? currentPlan : input.contingencyPlan;
+  if (plan === 'pass_to_descendants') {
+    throw unprocessable('An organisation has no children to pass a gift to');
+  }
 };
 
 /** A named fallback must be another of this person's own beneficiaries. */
@@ -53,8 +71,10 @@ export const createBeneficiary = (db: DbClient, ownerId: string, input: Benefici
     await checkFallback(trx, ownerId, null, input.contingencyBeneficiaryId);
     const row = await insertBeneficiary(trx, {
       owner_id: ownerId,
+      kind: input.kind,
       name: input.name,
       relationship: input.relationship,
+      institution_type: input.institutionType,
       contact: input.contact,
       contingency_plan: input.contingencyPlan,
       contingency_beneficiary_id: input.contingencyBeneficiaryId,
@@ -77,10 +97,14 @@ export const updateBeneficiary = (
   input: BeneficiaryUpdate
 ) =>
   db.transaction().execute(async trx => {
+    const existing = await findBeneficiary(trx, ownerId, id);
+    if (!existing) throw notFoundError('Beneficiary not found');
+    checkFitsKind(existing.kind, existing.contingency_plan, input);
     await checkFallback(trx, ownerId, id, input.contingencyBeneficiaryId);
     const row = await updateRow(trx, ownerId, id, {
       name: input.name,
       relationship: input.relationship,
+      institution_type: input.institutionType,
       contact: input.contact,
       contingency_plan: input.contingencyPlan,
       contingency_beneficiary_id: input.contingencyBeneficiaryId,
