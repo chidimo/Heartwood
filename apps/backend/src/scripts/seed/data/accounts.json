@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Seeded Tester",
+    "email": "seed@example.com",
+    "password": "seeded-password-1",
+    "inventory": "seeded-tester.json"
+  },
+  {
+    "name": "Other Tester",
+    "email": "other@example.com",
+    "password": "other-password-1",
+    "inventory": "other-tester.json"
+  }
+]

@@ -26,7 +26,9 @@
     "mobile:android": "yarn --cwd apps/mobile android",
     "mobile:typecheck": "yarn --cwd apps/mobile typecheck",
     "mobile:test": "yarn --cwd apps/mobile test",
-    "mobile:lint": "yarn --cwd apps/mobile lint"
+    "mobile:lint": "yarn --cwd apps/mobile lint",
+    "db:seed": "nx run backend:seed",
+    "db:reset": "nx run backend:reset"
   },
   "devDependencies": {
     "@nx/eslint": "22.4.4",

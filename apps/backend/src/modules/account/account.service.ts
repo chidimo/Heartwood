@@ -38,24 +38,33 @@ const issueTokens = async (db: DbClient, account: PublicAccount, secret: string)
   };
 };
 
-export const registerAccount = async (
-  db: DbClient,
-  input: RegisterInput,
-  secret: string
-): Promise<AuthResponse> => {
+/** Creates an account with no session (no tokens). Used by registration and by the dev seed. */
+export const createAccount = async (db: DbClient, input: RegisterInput): Promise<PublicAccount> => {
   if (await findAccountByEmail(db, input.email)) {
     throw conflict('An account with this email already exists');
   }
   const password_hash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
-  return db.transaction().execute(async trx => {
-    const account = await insertAccount(trx, {
-      email: input.email,
-      name: input.name,
-      password_hash,
-    });
+  return insertAccount(db, { email: input.email, name: input.name, password_hash });
+};
+
+/** The account with this email, or null. Never includes the password hash. */
+export const findPublicAccountByEmail = async (
+  db: DbClient,
+  email: string
+): Promise<PublicAccount | null> => {
+  const found = await findAccountByEmail(db, email);
+  return found ? { id: found.id, email: found.email, name: found.name } : null;
+};
+
+export const registerAccount = async (
+  db: DbClient,
+  input: RegisterInput,
+  secret: string
+): Promise<AuthResponse> =>
+  db.transaction().execute(async trx => {
+    const account = await createAccount(trx, input);
     return { account, ...(await issueTokens(trx, account, secret)) };
   });
-};
 
 export const loginAccount = async (
   db: DbClient,

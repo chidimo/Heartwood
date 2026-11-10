@@ -5,24 +5,50 @@
   "targets": {
     "start": {
       "executor": "nx:run-commands",
-      "options": { "command": "npx tsx watch src/index.ts", "cwd": "apps/backend" }
+      "options": {
+        "command": "npx tsx watch src/index.ts",
+        "cwd": "apps/backend"
+      }
     },
     "build": {
       "executor": "nx:run-commands",
-      "options": { "command": "npx tsc -p tsconfig.prod.json", "cwd": "apps/backend" }
+      "options": {
+        "command": "npx tsc -p tsconfig.prod.json",
+        "cwd": "apps/backend"
+      }
     },
     "typecheck": {
       "executor": "nx:run-commands",
-      "options": { "command": "npx tsc --noEmit -p .", "cwd": "apps/backend" }
+      "options": {
+        "command": "npx tsc --noEmit -p .",
+        "cwd": "apps/backend"
+      }
     },
     "migrate": {
       "executor": "nx:run-commands",
-      "options": { "command": "npx tsx src/scripts/db-mutation/migrate.ts", "cwd": "apps/backend" }
+      "options": {
+        "command": "npx tsx src/scripts/db-mutation/migrate.ts",
+        "cwd": "apps/backend"
+      }
     },
     "migration:create": {
       "executor": "nx:run-commands",
       "options": {
         "command": "npx tsx src/scripts/db-mutation/create-migration.ts",
+        "cwd": "apps/backend"
+      }
+    },
+    "seed": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx tsx src/scripts/seed/index.ts",
+        "cwd": "apps/backend"
+      }
+    },
+    "reset": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx tsx src/scripts/seed/reset.ts",
         "cwd": "apps/backend"
       }
     }

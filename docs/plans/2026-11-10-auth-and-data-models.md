@@ -61,6 +61,10 @@ A beneficiary is a person or an organisation. An organisation has a type (church
 - [x] Optional address on a beneficiary (person or organisation): free text up to 500 characters, migration `add_beneficiary_address`, API, mobile form field; 89 backend and 77 mobile tests pass (verified 2026-11-10; layout checked in the simulator)
 - [ ] Registration number and wording rules for gifts to organisations: waiting on Q17
 
+### Dev seed
+
+- [x] `apps/backend/src/scripts/seed/`: JSON data plus a runner that goes through the services; `yarn db:seed` (idempotent) and `yarn db:reset` (wipe, migrate, seed). Both refuse non-local databases and production. 102 backend tests pass including seed tests (verified 2026-11-10: `db:reset` run on a throwaway database gave identical counts twice)
+
 ### Clients
 
 Mobile inventory screens (branch `feature/mobile-inventory`, verified in the iOS Simulator 2026-11-10): tabs Assets / People / Review; asset detail with the allocation editor (split by percent or give to one person, running total, split evenly); beneficiary add, edit and remove with contingency (the fallback dropdown appears for "someone I name"); residuary editor; review report with a verdict, issues grouped by severity naming what each is about, and each issue opening its asset or person.
