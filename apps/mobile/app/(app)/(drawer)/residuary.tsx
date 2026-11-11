@@ -7,17 +7,17 @@ import {
   splitEvenly,
   toResiduaryEntries,
 } from '@heartwood/shared';
-import { errorMessage } from '../../src/api/client';
-import { Button } from '../../src/components/button';
-import { QueryState } from '../../src/components/query-state';
-import { Screen } from '../../src/components/screen';
-import { SharesEditor } from '../../src/components/shares-editor';
+import { errorMessage } from '../../../src/api/client';
+import { Button } from '../../../src/components/button';
+import { QueryState } from '../../../src/components/query-state';
+import { Screen } from '../../../src/components/screen';
+import { SharesEditor } from '../../../src/components/shares-editor';
 import {
   useBeneficiaries,
   useReplaceResiduary,
   useResiduary,
-} from '../../src/features/inventory/api';
-import { notify } from '../../src/notifications/notify';
+} from '../../../src/features/inventory/api';
+import { notify } from '../../../src/notifications/notify';
 
 const ResiduaryEditor = ({
   beneficiaries,
@@ -42,26 +42,29 @@ const ResiduaryEditor = ({
     });
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <Button
+          label="Save"
+          onPress={handleSave}
+          loading={save.isPending}
+          disabled={problem !== null}
+          testID="save-residuary"
+        />
+      }
+    >
       <Text className="text-ink/70 dark:text-white/70">
         Anything you haven't given to someone in particular, or forget to list, goes to these
         people.
       </Text>
-      <SharesEditor beneficiaries={beneficiaries} shares={shares} onChange={setShares} />
       <Pressable
         onPress={() => setShares(splitEvenly(beneficiaries.map(b => b.id)))}
         accessibilityRole="button"
       >
         <Text className="text-primary-600 dark:text-primary-200">Split evenly</Text>
       </Pressable>
+      <SharesEditor beneficiaries={beneficiaries} shares={shares} onChange={setShares} />
       {problem && <Text className="text-sm text-danger">{problem}</Text>}
-      <Button
-        label="Save"
-        onPress={handleSave}
-        loading={save.isPending}
-        disabled={problem !== null}
-        testID="save-residuary"
-      />
     </Screen>
   );
 };
@@ -69,7 +72,7 @@ const ResiduaryEditor = ({
 const NoBeneficiaries = () => (
   <Screen>
     <Text className="text-ink/70 dark:text-white/70">
-      Add a beneficiary on the People tab first.
+      Add a beneficiary first (Beneficiaries in the menu).
     </Text>
   </Screen>
 );

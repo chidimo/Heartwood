@@ -1,13 +1,32 @@
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { SectionList, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import {
+  beneficiarySubtitle,
+  contingencyLabel,
+  contingencyQuestion,
+  type BeneficiaryDto,
+} from '@heartwood/shared';
 import { Button } from '../../../src/components/button';
+import { ChoiceSheet } from '../../../src/components/choice-sheet';
 import { QueryState } from '../../../src/components/query-state';
 import { useBeneficiaries } from '../../../src/features/inventory/api';
-import { beneficiarySubtitle, contingencyLabel, contingencyQuestion } from '@heartwood/shared';
 
-const PeopleScreen = () => {
+const sectionsOf = (all: BeneficiaryDto[]) =>
+  [
+    { title: 'People', data: all.filter(b => b.kind === 'person') },
+    { title: 'Organisations', data: all.filter(b => b.kind === 'institution') },
+  ].filter(section => section.data.length > 0);
+
+const BeneficiariesScreen = () => {
   const router = useRouter();
   const beneficiaries = useBeneficiaries();
+  const [isChoosing, setIsChoosing] = useState(false);
+
+  const handleAdd = (kind: 'person' | 'institution') => {
+    setIsChoosing(false);
+    router.push({ pathname: '/beneficiary', params: { kind } });
+  };
 
   return (
     <View className="flex-1 bg-white dark:bg-ink">
@@ -25,10 +44,16 @@ const PeopleScreen = () => {
           }
         >
           {list => (
-            <FlatList
-              data={list}
+            <SectionList
+              sections={sectionsOf(list)}
               keyExtractor={item => item.id}
+              stickySectionHeadersEnabled={false}
               ItemSeparatorComponent={() => <View className="h-3" />}
+              renderSectionHeader={({ section }) => (
+                <Text className="pb-2 pt-4 text-lg font-semibold text-ink dark:text-white">
+                  {section.title}
+                </Text>
+              )}
               renderItem={({ item }) => (
                 <Pressable
                   accessibilityRole="button"
@@ -53,11 +78,24 @@ const PeopleScreen = () => {
       <View className="px-6 pb-6">
         <Button
           label="Add a beneficiary"
-          onPress={() => router.push('/beneficiary')}
+          onPress={() => setIsChoosing(true)}
           testID="add-beneficiary"
         />
       </View>
+      <ChoiceSheet
+        visible={isChoosing}
+        title="Who are you adding?"
+        onClose={() => setIsChoosing(false)}
+        choices={[
+          { label: 'A person', onPress: () => handleAdd('person'), testID: 'add-person' },
+          {
+            label: 'An organisation',
+            onPress: () => handleAdd('institution'),
+            testID: 'add-organisation',
+          },
+        ]}
+      />
     </View>
   );
 };
-export default PeopleScreen;
+export default BeneficiariesScreen;

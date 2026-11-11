@@ -47,17 +47,17 @@ interface FieldsProps {
 
 const SplitFields = ({ beneficiaries, form, onChange }: FieldsProps) => (
   <>
-    <SharesEditor
-      beneficiaries={beneficiaries}
-      shares={form.shares}
-      onChange={shares => onChange({ ...form, shares })}
-    />
     <Pressable
       onPress={() => onChange({ ...form, shares: splitEvenly(beneficiaries.map(b => b.id)) })}
       accessibilityRole="button"
     >
       <Text className="text-primary-600 dark:text-primary-200">Split evenly</Text>
     </Pressable>
+    <SharesEditor
+      beneficiaries={beneficiaries}
+      shares={form.shares}
+      onChange={shares => onChange({ ...form, shares })}
+    />
   </>
 );
 
@@ -75,6 +75,18 @@ const BequestFields = ({ beneficiaries, form, onChange }: FieldsProps) => (
       onChangeText={bequestText => onChange({ ...form, bequestText })}
       hint="For example: the car, with all its documents."
     />
+  </>
+);
+
+const AssetHeader = ({ asset }: { asset: AssetDto }) => (
+  <>
+    <View className="gap-1">
+      <Text className="text-xs uppercase text-primary-600 dark:text-primary-200">
+        {ASSET_TYPE_LABELS[asset.type]}
+      </Text>
+      <Text className="text-xl font-semibold text-ink dark:text-white">{asset.description}</Text>
+    </View>
+    <Text className="mt-2 text-lg font-semibold text-ink dark:text-white">Who gets it?</Text>
   </>
 );
 
@@ -103,7 +115,18 @@ const AllocationEditor = ({ asset, beneficiaries, executors, current }: EditorPr
     });
 
   return (
-    <View className="gap-4">
+    <Screen
+      footer={
+        <Button
+          label="Save allocation"
+          onPress={handleSave}
+          loading={save.isPending}
+          disabled={problem !== null}
+          testID="save-allocation"
+        />
+      }
+    >
+      <AssetHeader asset={asset} />
       <Segmented
         value={form.mode}
         options={MODES}
@@ -131,14 +154,7 @@ const AllocationEditor = ({ asset, beneficiaries, executors, current }: EditorPr
           Nothing chosen: this asset will pass under the “everything else” rule.
         </Text>
       )}
-      <Button
-        label="Save allocation"
-        onPress={handleSave}
-        loading={save.isPending}
-        disabled={problem !== null}
-        testID="save-allocation"
-      />
-    </View>
+    </Screen>
   );
 };
 
@@ -154,13 +170,16 @@ const AssetAllocations = ({
 
   if (beneficiaries.length === 0) {
     return (
-      <Link href="/beneficiary" asChild>
-        <Pressable accessibilityRole="link">
-          <Text className="text-primary-600 dark:text-primary-200">
-            Add a beneficiary first, then decide who gets this.
-          </Text>
-        </Pressable>
-      </Link>
+      <Screen>
+        <AssetHeader asset={asset} />
+        <Link href="/beneficiary" asChild>
+          <Pressable accessibilityRole="link">
+            <Text className="text-primary-600 dark:text-primary-200">
+              Add a beneficiary first, then decide who gets this.
+            </Text>
+          </Pressable>
+        </Link>
+      </Screen>
     );
   }
   return (
@@ -187,19 +206,9 @@ const AssetEditBody = ({ asset }: { asset: AssetDto }) => {
   const beneficiaries = useBeneficiaries();
 
   return (
-    <Screen>
-      <View className="gap-1">
-        <Text className="text-xs uppercase text-primary-600 dark:text-primary-200">
-          {ASSET_TYPE_LABELS[asset.type]}
-        </Text>
-        <Text className="text-xl font-semibold text-ink dark:text-white">{asset.description}</Text>
-      </View>
-
-      <Text className="mt-2 text-lg font-semibold text-ink dark:text-white">Who gets it?</Text>
-      <QueryState query={beneficiaries}>
-        {people => <AssetAllocations asset={asset} beneficiaries={people} />}
-      </QueryState>
-    </Screen>
+    <QueryState query={beneficiaries}>
+      {people => <AssetAllocations asset={asset} beneficiaries={people} />}
+    </QueryState>
   );
 };
 

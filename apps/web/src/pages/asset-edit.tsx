@@ -44,11 +44,6 @@ interface FieldsProps {
 
 const SplitFields = ({ beneficiaries, form, onChange }: FieldsProps) => (
   <>
-    <SharesEditor
-      beneficiaries={beneficiaries}
-      shares={form.shares}
-      onChange={shares => onChange({ ...form, shares })}
-    />
     <div>
       <Button
         variant="link"
@@ -57,6 +52,11 @@ const SplitFields = ({ beneficiaries, form, onChange }: FieldsProps) => (
         Split evenly
       </Button>
     </div>
+    <SharesEditor
+      beneficiaries={beneficiaries}
+      shares={form.shares}
+      onChange={shares => onChange({ ...form, shares })}
+    />
   </>
 );
 

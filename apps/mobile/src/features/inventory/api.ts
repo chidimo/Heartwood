@@ -1,10 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AllocationEntry,
   AllocationDto,
   BeneficiaryDto,
   BeneficiaryInput,
   BeneficiaryUpdate,
+  DirectoryPage,
+  DirectorySearch,
   ExecutorDto,
   ExecutorInput,
   ExecutorUpdate,
@@ -35,6 +37,46 @@ export const useExecutors = () =>
   useQuery({
     queryKey: inventoryKeys.executors,
     queryFn: () => apiFetch<ExecutorDto[]>('/executors'),
+  });
+
+type DirectoryFilters = Pick<DirectorySearch, 'type' | 'state'> & { q?: string; limit?: number };
+
+const DIRECTORY_PAGE_SIZE = 20;
+
+/** Our organisation list, a page at a time: `fetchNextPage` appends the next page (infinite scroll). */
+export const useOrganizationDirectory = (filters: DirectoryFilters) => {
+  const limit = filters.limit ?? DIRECTORY_PAGE_SIZE;
+  const query = useInfiniteQuery({
+    queryKey: ['organization-directory', { ...filters, limit }],
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({ page: String(pageParam), limit: String(limit) });
+      if (filters.q) params.set('q', filters.q);
+      if (filters.type) params.set('type', filters.type);
+      if (filters.state) params.set('state', filters.state);
+      return apiFetch<DirectoryPage>(`/organization-directory?${params.toString()}`);
+    },
+    initialPageParam: 1,
+    getNextPageParam: last => (last.page < last.totalPages ? last.page + 1 : undefined),
+    staleTime: 5 * 60 * 1000,
+  });
+  return {
+    items: query.data?.pages.flatMap(page => page.items) ?? [],
+    total: query.data?.pages[0]?.total ?? 0,
+    isPending: query.isPending,
+    error: query.error,
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+    isRefetching: query.isRefetching,
+    fetchNextPage: () => void query.fetchNextPage(),
+    refetch: () => void query.refetch(),
+  };
+};
+
+export const useOrganizationStates = () =>
+  useQuery({
+    queryKey: ['organization-directory', 'states'],
+    queryFn: () => apiFetch<string[]>('/organization-directory/states'),
+    staleTime: 60 * 60 * 1000,
   });
 
 export const useAllocations = (assetId: string) =>

@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import type { DbClient } from '@heartwood/database';
 
-import morganMiddleware from './middleware/morgan.middleware';
+import { morganMiddleware } from './middleware/morgan.middleware';
 import { errorHandler } from './middleware/error-handler';
 import { createAuthRoutes } from './routes/auth';
 import { createHealthRoutes } from './routes/health';

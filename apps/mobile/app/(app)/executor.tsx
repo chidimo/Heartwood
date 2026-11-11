@@ -63,7 +63,17 @@ const ExecutorForm = ({ existing }: { existing: ExecutorDto | null }) => {
     );
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <Button
+          label="Save"
+          onPress={handleSave}
+          loading={create.isPending || update.isPending}
+          disabled={!name.trim()}
+          testID="save-executor"
+        />
+      }
+    >
       <Segmented value={kind} options={EXECUTOR_KIND_OPTIONS} onChange={setKind} />
       <TextField label="Name" value={name} onChangeText={setName} autoComplete="name" />
       <TextField
@@ -71,13 +81,6 @@ const ExecutorForm = ({ existing }: { existing: ExecutorDto | null }) => {
         value={contact}
         onChangeText={setContact}
         autoCapitalize="none"
-      />
-      <Button
-        label="Save"
-        onPress={handleSave}
-        loading={create.isPending || update.isPending}
-        disabled={!name.trim()}
-        testID="save-executor"
       />
       {existing && (
         <Pressable onPress={handleDelete} accessibilityRole="button">

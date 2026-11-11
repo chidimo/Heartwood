@@ -41,12 +41,12 @@ const ResiduaryEditor = ({
         Anything you haven't given to someone in particular, or forget to list, goes to these
         people.
       </p>
-      <SharesEditor beneficiaries={beneficiaries} shares={shares} onChange={setShares} />
       <div>
         <Button variant="link" onClick={() => setShares(splitEvenly(beneficiaries.map(b => b.id)))}>
           Split evenly
         </Button>
       </div>
+      <SharesEditor beneficiaries={beneficiaries} shares={shares} onChange={setShares} />
       {problem && (
         <p role="alert" className="text-sm text-danger">
           {problem}

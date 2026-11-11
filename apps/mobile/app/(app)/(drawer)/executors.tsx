@@ -1,8 +1,8 @@
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button } from '../../src/components/button';
-import { QueryState } from '../../src/components/query-state';
-import { useExecutors } from '../../src/features/inventory/api';
+import { Button } from '../../../src/components/button';
+import { QueryState } from '../../../src/components/query-state';
+import { useExecutors } from '../../../src/features/inventory/api';
 import { EXECUTOR_KIND_OPTIONS } from '@heartwood/shared';
 
 const kindLabel = (kind: string) =>

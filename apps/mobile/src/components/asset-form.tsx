@@ -51,7 +51,17 @@ export const AssetForm = ({ existing, submitLabel, isPending, onSubmit }: Props)
   };
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <Button
+          label={submitLabel}
+          onPress={handleSave}
+          loading={isPending}
+          disabled={!description.trim()}
+          testID="save-asset"
+        />
+      }
+    >
       <Select
         label="What kind of asset is it?"
         value={type}
@@ -79,13 +89,6 @@ export const AssetForm = ({ existing, submitLabel, isPending, onSubmit }: Props)
         onChangeText={setNotes}
         multiline
         hint={NO_ACCOUNT_NUMBERS}
-      />
-      <Button
-        label={submitLabel}
-        onPress={handleSave}
-        loading={isPending}
-        disabled={!description.trim()}
-        testID="save-asset"
       />
     </Screen>
   );

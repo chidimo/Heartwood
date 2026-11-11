@@ -47,7 +47,7 @@ morgan.token('colored-status', (_req, res) => {
 });
 
 // Build the morgan middleware
-const morganMiddleware = morgan((tokens, req, res) => {
+export const morganMiddleware = morgan((tokens, req, res) => {
   const method = tokens['colored-method'](req, res);
   const url = tokens.url(req, res);
   const status = tokens['colored-status'](req, res);
@@ -55,5 +55,3 @@ const morganMiddleware = morgan((tokens, req, res) => {
   const length = tokens.res(req, res, 'content-length') ?? '-';
   return `${method} ${url} ${status} ${length} - ${time} ms`;
 });
-
-export default morganMiddleware;
