@@ -1,0 +1,80 @@
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import type { BeneficiaryDto } from '@heartwood/shared';
+import { SharesEditor } from '../shares-editor';
+
+const person = (id: string, name: string): BeneficiaryDto => ({
+  id,
+  kind: 'person',
+  name,
+  institutionType: null,
+  directoryId: null,
+  relationship: 'son',
+  relationshipOther: null,
+  contact: null,
+  address: null,
+  dateOfBirth: null,
+  contingencyPlan: null,
+  contingencyBeneficiaryId: null,
+  createdAt: '',
+  updatedAt: '',
+});
+
+const PEOPLE = [person('a', 'Ada'), person('b', 'Bola')];
+
+const church: BeneficiaryDto = {
+  ...person('c', 'Grace Chapel'),
+  kind: 'institution',
+  relationship: null,
+  relationshipOther: null,
+  institutionType: 'church',
+  directoryId: null,
+};
+
+describe('SharesEditor', () => {
+  it('shows an organisation with its type instead of a relationship', async () => {
+    await render(<SharesEditor beneficiaries={[church]} shares={{ c: '' }} onChange={jest.fn()} />);
+    expect(screen.getByText('Grace Chapel')).toBeTruthy();
+    expect(screen.getByText('Church')).toBeTruthy();
+  });
+
+  it('shows only the people added so far and the running total', async () => {
+    await render(<SharesEditor beneficiaries={PEOPLE} shares={{ a: '60' }} onChange={jest.fn()} />);
+    expect(screen.getByText('Ada')).toBeTruthy();
+    expect(screen.queryByLabelText('Share for Bola')).toBeNull();
+    expect(screen.getByTestId('shares-total').props.children).toBe('60%');
+  });
+
+  it('starts empty and adds a beneficiary when picked from the dropdown', async () => {
+    const onChange = jest.fn();
+    await render(<SharesEditor beneficiaries={PEOPLE} shares={{}} onChange={onChange} />);
+    expect(screen.getByText('No one yet. Add the first beneficiary.')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Add a beneficiary' }));
+    await fireEvent.press(screen.getByRole('menuitem', { name: 'Bola' }));
+    expect(onChange).toHaveBeenCalledWith({ b: '' });
+  });
+
+  it('reports a typed share without losing the others, and removes a person on request', async () => {
+    const onChange = jest.fn();
+    await render(
+      <SharesEditor beneficiaries={PEOPLE} shares={{ a: '60', b: '' }} onChange={onChange} />
+    );
+    await fireEvent.changeText(screen.getByLabelText('Share for Bola'), '40');
+    expect(onChange).toHaveBeenCalledWith({ a: '60', b: '40' });
+    await fireEvent.press(screen.getByRole('button', { name: 'Remove Ada' }));
+    expect(onChange).toHaveBeenCalledWith({ b: '' });
+  });
+
+  it('splits evenly between the people added, once there are two', async () => {
+    const onChange = jest.fn();
+    await render(
+      <SharesEditor beneficiaries={PEOPLE} shares={{ a: '', b: '' }} onChange={onChange} />
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Split evenly' }));
+    expect(onChange).toHaveBeenCalledWith({ a: '50', b: '50' });
+  });
+
+  it('hides the split button until two people are added', async () => {
+    await render(<SharesEditor beneficiaries={PEOPLE} shares={{ a: '' }} onChange={jest.fn()} />);
+    expect(screen.queryByText('Split evenly')).toBeNull();
+  });
+});

@@ -1,7 +1,7 @@
 import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   root: import.meta.dirname,
@@ -15,4 +15,9 @@ export default defineConfig({
   preview: { port: 5175, host: 'localhost' },
   plugins: [react(), tailwindcss()],
   build: { outDir: '../../dist/apps/web', emptyOutDir: true },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test-setup.ts'],
+    css: false,
+  },
 });

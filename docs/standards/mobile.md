@@ -164,6 +164,11 @@ build nothing that shows real data without it being easy to add.
   phone; passing tests don't show that a screen renders correctly. For anything touching Metro, native config or
   `@heartwood/shared`, run `npx expo export --platform ios` as a bundling smoke test.
 
+- When driving the iOS Simulator by script: its text injection stops after about 13 characters and can drop
+  characters right after a field gets focus. Type in chunks of 12 or fewer, wait, and check the field before
+  tapping Save. Don't tear down the Postgres a running dev backend uses when you run the test script: give dev
+  its own database (`docker-compose.yml`, port 5434) and tests theirs (`docker-compose.test.yml`, 5433).
+
 **Why:** Falcon's mobile code isn't linted and its offline queue is "unit-tested, awaiting on-device testing" for
 weeks; Olamma's lint rules were added after an un-awaited promise sent an empty upload on Android.
 
@@ -196,6 +201,30 @@ If a screen or component uses a module that doesn't run on the web build (maps, 
 
 **Why:** Metro picks the right file per platform, so the web build keeps working for local development without
 conditionals scattered through the code (Falcon's `customers-map.web.tsx`).
+
+## Rule 18 — A choice from a fixed list is a `Select` dropdown
+
+Use `Select` (`src/components/select.tsx`: a field showing the current choice that opens the options in a
+bottom sheet), not a row of chips and not the platform picker wheel.
+
+**Why:** chips don't scale past a handful of options and wrap unpredictably on small phones; the iOS picker is an
+inline wheel that takes over the form. A dropdown stays one line tall and reads the same on both platforms. The
+asset type started as chips and was changed on feedback.
+
+**How to apply it:** pass `options` as `{value, label}` pairs derived from the shared constant (for example
+`ASSET_TYPES` and its labels), so the list can't drift from what the server accepts.
+
+## Rule 19 — Dates are picked with `DateField`, never typed
+
+Use `DateField` (`src/components/date-field.tsx`): a field that opens the phone's own picker, a spinner in a sheet on iOS and the system dialog on Android, and reports "YYYY-MM-DD". It starts the picker on the current value or an
+`initialDate`, bounds it to 1900 and the latest allowed day, and only commits on Done. The web build has a typed
+fallback (`date-field.web.tsx`, DD/MM/YYYY).
+
+**Why:** a typed "15/6/12" is ambiguous, and on a phone it is one more place for a keystroke to go wrong. A picker can't produce a
+date that doesn't exist. Dates are read and written in local time (`isoFromDate`, `dateFromIso` in `utils/date.ts`)
+so the day someone picks never shifts across a timezone; the date tests run under two extreme timezones for that reason.
+
+**How to apply it:** send the API the "YYYY-MM-DD" string as it is. Never build a date from a string with `new Date("2012-06-15")` (that is UTC midnight, which is the previous day in some timezones): use `dateFromIso`.
 
 ## What we deliberately did not copy
 
