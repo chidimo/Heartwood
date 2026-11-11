@@ -25,9 +25,9 @@ describe('DateField (iOS sheet)', () => {
     expect(screen.getByText('Choose a date')).toBeTruthy();
   });
 
-  it('shows the chosen date as day, month name and year', async () => {
+  it('shows the chosen date with its weekday, day, month name and year', async () => {
     await setup('2012-06-15');
-    expect(screen.getByText('15 June 2012')).toBeTruthy();
+    expect(screen.getByText('Friday, 15 June 2012')).toBeTruthy();
   });
 
   it('opens a picker, and Done reports the day that was picked as YYYY-MM-DD', async () => {

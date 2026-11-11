@@ -23,3 +23,12 @@ html {
 body {
   @apply bg-white text-ink dark:bg-ink dark:text-white;
 }
+
+/* Paper is white: print black on white even when the screen is in dark mode. */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+}

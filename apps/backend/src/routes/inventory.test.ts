@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { INSTITUTION_TYPES, RELATIONSHIPS, ageInYears } from '@heartwood/shared';
+import { INSTITUTION_TYPES, RELATIONSHIPS, ageInYears, draftFileName } from '@heartwood/shared';
 import { createTestApp, registerTestUser } from '../test-utils/test-app';
 import { useTestDb } from '../test-utils/useTestDb';
 import { addDirectoryEntries } from '../modules/organization-directory/organization-directory.service';
@@ -1247,7 +1247,16 @@ describe('inventory', () => {
   });
 
   describe('draft will', () => {
-    it('writes the inventory up as a draft, privately, with executors and gifts', async () => {
+    const binary = (
+      response: request.Response,
+      done: (err: Error | null, body: Buffer) => void
+    ) => {
+      const chunks: Buffer[] = [];
+      response.on('data', (chunk: Buffer) => chunks.push(chunk));
+      response.on('end', () => done(null, Buffer.concat(chunks)));
+    };
+
+    it('writes the inventory up as two documents, privately', async () => {
       const alice = as((await registerTestUser(app)).bearer);
       const bob = as((await registerTestUser(app)).bearer);
       const flat = (await alice.post('/api/assets', { type: 'property', description: 'The flat' }))
@@ -1260,31 +1269,85 @@ describe('inventory', () => {
         entries: [{ beneficiaryId: ada.id, sharePercent: 100 }],
       });
       const draft = (await alice.get('/api/draft-will')).body;
-      const text = JSON.stringify(draft);
-      expect(draft.banner).toContain('not a valid will');
-      expect(text).toContain('I give The flat to the following');
-      expect(text).toContain('Ada Obi (my daughter) as to 100%');
-      expect(text).toContain('I appoint Uncle Emeka to be the executor of this will.');
+      const will = JSON.stringify(draft.will);
+      expect(draft.will.banner).toContain('not a valid will');
+      expect(will).toContain('The flat');
+      expect(will).toContain('Ada Obi (my daughter) as to 100%');
+      expect(will).toContain('I appoint Uncle Emeka to be the executor of this will.');
+      expect(JSON.stringify(draft.notes)).toContain('Schedule of assets');
+      expect(will).not.toContain('Schedule of assets');
       const others = JSON.stringify((await bob.get('/api/draft-will')).body);
       expect(others).not.toContain('The flat');
       expect(others).not.toContain('Ada Obi');
     });
 
-    it('downloads as a Word document and needs a session', async () => {
+    it('opens with the address from the profile', async () => {
       const alice = as((await registerTestUser(app)).bearer);
-      const res = await alice
-        .get('/api/draft-will/docx')
-        .buffer(true)
-        .parse((response, done) => {
-          const chunks: Buffer[] = [];
-          response.on('data', (chunk: Buffer) => chunks.push(chunk));
-          response.on('end', () => done(null, Buffer.concat(chunks)));
+      expect(JSON.stringify((await alice.get('/api/draft-will')).body.will)).toContain('[ADDRESS]');
+      await alice.patch('/api/auth/me', { address: '12 Adeola Odeku Street, Lagos' });
+      expect(JSON.stringify((await alice.get('/api/draft-will')).body.will)).toContain(
+        '12 Adeola Odeku Street, Lagos'
+      );
+    });
+
+    it('gives a reference that stays the same until the words change', async () => {
+      const alice = as((await registerTestUser(app)).bearer);
+      const first = (await alice.get('/api/draft-will')).body.reference;
+      expect(first).toMatch(/^[0-9A-F]{12}$/);
+      expect((await alice.get('/api/draft-will')).body.reference).toBe(first);
+      await alice.post('/api/executors', { kind: 'executor', name: 'Uncle Emeka' });
+      expect((await alice.get('/api/draft-will')).body.reference).not.toBe(first);
+    });
+
+    it.each([
+      ['will', 'draft-will'],
+      ['notes', 'notes-for-lawyer'],
+    ])(
+      'downloads the %s as a PDF, with names that need more than basic letters',
+      async (document, file) => {
+        const alice = as((await registerTestUser(app)).bearer);
+        const asset = (
+          await alice.post('/api/assets', {
+            type: 'cash',
+            description: 'Savings',
+            roughValue: 2500000,
+          })
+        ).body;
+        const person = (
+          await alice.post('/api/beneficiaries', { name: 'Ọlá Ẹniọla Ṣobọ', relationship: 'son' })
+        ).body;
+        await alice.put(`/api/assets/${asset.id}/allocations`, {
+          entries: [{ beneficiaryId: person.id, sharePercent: 100 }],
         });
+        const res = await alice.get(`/api/draft-will/${document}.pdf`).buffer(true).parse(binary);
+        expect(res.status).toBe(200);
+        expect(res.headers['content-type']).toBe('application/pdf');
+        const { name } = (await alice.get('/api/auth/me')).body;
+        expect(res.headers['content-disposition']).toBe(
+          `attachment; filename="${draftFileName(document as 'will' | 'notes', name, 'pdf')}"`
+        );
+        expect(res.headers['content-disposition']).toContain(file);
+        expect((res.body as Buffer).subarray(0, 5).toString()).toBe('%PDF-');
+      }
+    );
+
+    it.each([['will'], ['notes']])('downloads the %s as a Word document', async document => {
+      const alice = as((await registerTestUser(app)).bearer);
+      const res = await alice.get(`/api/draft-will/${document}.docx`).buffer(true).parse(binary);
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toContain('wordprocessingml.document');
-      expect(res.headers['content-disposition']).toContain('draft-will.docx');
+      const { name } = (await alice.get('/api/auth/me')).body;
+      expect(res.headers['content-disposition']).toBe(
+        `attachment; filename="${draftFileName(document as 'will' | 'notes', name, 'docx')}"`
+      );
       expect((res.body as Buffer).subarray(0, 2).toString()).toBe('PK');
-      expect((await request(app).get('/api/draft-will/docx')).status).toBe(401);
+    });
+
+    it('needs a session, and knows only the two documents', async () => {
+      const alice = as((await registerTestUser(app)).bearer);
+      expect((await request(app).get('/api/draft-will')).status).toBe(401);
+      expect((await request(app).get('/api/draft-will/will.pdf')).status).toBe(401);
+      expect((await alice.get('/api/draft-will/secrets.pdf')).status).toBe(400);
     });
   });
 

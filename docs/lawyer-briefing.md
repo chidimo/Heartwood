@@ -39,8 +39,10 @@ trail.
 
 ## What it does not do yet
 
-- **The draft will is a first cut.** It is built from the person's instructions and can be previewed, printed
-  and downloaded as a Word document (on the phone it is shared as text). Every standard clause is a plain
+- **The draft will is a first cut.** It is built from the person's instructions as two separate documents, the will and
+  notes for you, each shown as a PDF and downloadable as PDF or Word (on the phone it is shared as text). Every
+  page of the PDF carries a Heartwood watermark and a reference code from its exact words, so you can check a
+  copy against the app's own. The code marks where a copy came from; it is not a signature. Every standard clause is a plain
   placeholder and the signing block asserts no formalities, so it needs your wording (Q24) and your answers to
   Q1 and Q2 below. It is marked on every copy as not a valid will.
 - No e-signing, witnessing or notarisation, and no lawyer or executor logins. Handover to a lawyer is by

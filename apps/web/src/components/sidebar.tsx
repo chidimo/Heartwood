@@ -70,9 +70,19 @@ const NavList = ({ onNavigate }: { onNavigate: () => void }) => (
   </nav>
 );
 
-const AccountFooter = ({ name, email, onSignOut }: Omit<Props, 'isOpen' | 'onClose'>) => (
+const AccountFooter = ({
+  name,
+  email,
+  onSignOut,
+  onNavigate,
+}: Omit<Props, 'isOpen' | 'onClose'> & { onNavigate: () => void }) => (
   <div className="border-t border-primary-600/20 pt-3">
-    <div className="flex items-center gap-3 px-3 py-2">
+    <Link
+      to="/profile"
+      onClick={onNavigate}
+      aria-label="Your profile"
+      className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-primary-600/10 [&.active]:bg-primary-600/15"
+    >
       <span
         aria-hidden
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-600/20 text-xs font-semibold text-primary-700 dark:text-primary-200"
@@ -85,7 +95,7 @@ const AccountFooter = ({ name, email, onSignOut }: Omit<Props, 'isOpen' | 'onClo
           <span className="block truncate text-xs text-ink/60 dark:text-white/60">{email}</span>
         )}
       </span>
-    </div>
+    </Link>
     <button
       type="button"
       onClick={onSignOut}
@@ -106,7 +116,7 @@ export const Sidebar = ({ isOpen, onClose, name, email, onSignOut }: Props) => (
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-y-auto px-3 pb-4">
         <NavList onNavigate={() => {}} />
-        <AccountFooter name={name} email={email} onSignOut={onSignOut} />
+        <AccountFooter name={name} email={email} onSignOut={onSignOut} onNavigate={() => {}} />
       </div>
     </aside>
 
@@ -139,7 +149,7 @@ export const Sidebar = ({ isOpen, onClose, name, email, onSignOut }: Props) => (
         </div>
         <div className="flex flex-1 flex-col justify-between overflow-y-auto px-3 pb-4">
           <NavList onNavigate={onClose} />
-          <AccountFooter name={name} email={email} onSignOut={onSignOut} />
+          <AccountFooter name={name} email={email} onSignOut={onSignOut} onNavigate={onClose} />
         </div>
       </aside>
     </div>

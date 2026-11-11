@@ -25,7 +25,22 @@ export interface PublicAccount {
   id: string;
   email: string;
   name: string;
+  /** Where the person lives, as they wrote it; used in the draft will. */
+  address: string | null;
 }
+
+// The profile: what a person can change about themselves. An empty address clears it.
+export const profileUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(200).optional(),
+  address: z
+    .string()
+    .trim()
+    .max(500)
+    .nullable()
+    .optional()
+    .transform(value => (value === '' ? null : value)),
+});
+export type ProfileUpdate = z.infer<typeof profileUpdateSchema>;
 
 export interface AuthTokens {
   accessToken: string;

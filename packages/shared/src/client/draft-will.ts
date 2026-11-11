@@ -7,7 +7,8 @@ import type {
   InventoryIssue,
   ResiduaryEntry,
 } from '../inventory';
-import { ASSET_TYPE_LABELS, formatValue } from './asset-labels';
+import { ASSET_TYPE_LABELS } from './asset-labels';
+import { formatLongDate } from './dates';
 import { INSTITUTION_TYPE_LABELS, relationshipLabel } from './labels';
 
 // A draft will built from what the person entered, for a lawyer to correct. It states what they asked for
@@ -16,22 +17,38 @@ import { INSTITUTION_TYPE_LABELS, relationshipLabel } from './labels';
 export interface DraftSection {
   heading: string;
   paragraphs: string[];
+  /** Smaller parts under this heading: one per asset in the gifts. */
+  subsections?: DraftSection[];
 }
 
-export interface DraftWill {
+/** One document of the draft: the will itself, or the lawyer's notes. */
+export interface DraftDocument {
   title: string;
-  /** The warning shown above everything: this is not yet a will. */
+  /** The warning shown above it. */
   banner: string;
-  /** The will itself, clause by clause. */
-  will: DraftSection[];
-  /** Notes for the reviewing lawyer: not part of the will. */
-  notes: DraftSection[];
+  sections: DraftSection[];
+}
+
+export type DraftDocumentKey = 'will' | 'notes';
+
+/** Two separate documents: the will, and notes for the lawyer who reviews it. */
+export interface DraftWill {
+  /** Whose draft it is, as they gave their name. */
+  testatorName: string;
+  /** When this copy was made, in words: "Wednesday, 11 November 2026 at 2:32:09 pm". */
+  preparedAt: string;
+  /** A short code from the exact words of both documents, so a copy can be checked against the app's own. Set by the server. */
+  reference: string | null;
+  will: DraftDocument;
+  notes: DraftDocument;
 }
 
 export interface DraftInput {
   testatorName: string;
-  /** "YYYY-MM-DD", shown in the banner. */
-  preparedOn: string;
+  /** Where the testator lives, or null when not given (the draft then leaves a gap). */
+  testatorAddress: string | null;
+  /** When this copy is made, already in words: "Wednesday, 11 November 2026 at 2:32:09 pm". */
+  preparedAt: string;
   assets: AssetDto[];
   beneficiaries: BeneficiaryDto[];
   executors: ExecutorDto[];
@@ -41,6 +58,15 @@ export interface DraftInput {
   /** Every issue the review found, not one page of them. */
   issues: InventoryIssue[];
 }
+
+/** "NGN 45,000,000": the currency as its code, since a PDF font may not have the naira sign. */
+const plainAmount = (value: number, currency: string): string => {
+  const digits = new Intl.NumberFormat('en-NG', {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+  return `${currency} ${digits}`;
+};
 
 const BLANK = '____________________';
 const ADDRESS_GAP = '[ADDRESS]';
@@ -168,7 +194,9 @@ const willSections = (input: DraftInput, people: Map<string, BeneficiaryDto>): D
   const sections: DraftSection[] = [
     {
       heading: 'Opening',
-      paragraphs: [`THIS IS THE LAST WILL of me, ${input.testatorName} of ${ADDRESS_GAP}.`],
+      paragraphs: [
+        `THIS IS THE LAST WILL of me, ${input.testatorName} of ${input.testatorAddress?.trim() || ADDRESS_GAP}.`,
+      ],
     },
     { heading: 'Revocation', paragraphs: ['I revoke all earlier wills and codicils made by me.'] },
     { heading: 'Executors', paragraphs: executorsClause(input.executors) },
@@ -178,9 +206,12 @@ const willSections = (input: DraftInput, people: Map<string, BeneficiaryDto>): D
   if (allocated.length > 0) {
     sections.push({
       heading: 'Gifts of particular assets',
-      paragraphs: allocated.flatMap(a =>
-        giftClause(a, input.allocations[a.id] ?? [], people, executors)
-      ),
+      paragraphs: [],
+      // Each asset is named in a heading of its own, with its distribution beneath.
+      subsections: allocated.map(a => ({
+        heading: a.description,
+        paragraphs: giftClause(a, input.allocations[a.id] ?? [], people, executors),
+      })),
     });
   }
 
@@ -209,9 +240,14 @@ const willSections = (input: DraftInput, people: Map<string, BeneficiaryDto>): D
     paragraphs: [
       `IN WITNESS of which I have signed this will on ${DATE_GAP}.`,
       `SIGNED by the testator, ${input.testatorName}, in the presence of both of us, present at the same time, who have signed as witnesses in the testator's presence:`,
-      `Testator: ${BLANK}`,
-      `Witness 1. Name: ${BLANK}  Address: ${BLANK}  Occupation: ${BLANK}  Signature: ${BLANK}`,
-      `Witness 2. Name: ${BLANK}  Address: ${BLANK}  Occupation: ${BLANK}  Signature: ${BLANK}`,
+      `Signature of the testator: ${BLANK}`,
+      ...[1, 2].flatMap(n => [
+        `Witness ${n}`,
+        `Name: ${BLANK}`,
+        `Address: ${BLANK}`,
+        `Occupation: ${BLANK}`,
+        `Signature: ${BLANK}`,
+      ]),
     ],
   });
   return sections;
@@ -219,7 +255,7 @@ const willSections = (input: DraftInput, people: Map<string, BeneficiaryDto>): D
 
 const ASSUMPTIONS = [
   'State: drafted as if for Lagos only (open question Q1). Other states may differ.',
-  'Signing: written for signing and witnessing on paper. Digital signing is not assumed (Q2). The execution formalities above must be confirmed.',
+  'Signing: written for signing and witnessing on paper. Digital signing is not assumed (Q2). The execution formalities in the signing clause of the will must be confirmed.',
   'Conditions on gifts: age, marriage, education, NYSC, survival and free-text conditions are written as the person asked. Which of them are enforceable is open (Q18), and marriage and conduct conditions are the likeliest to fail.',
   'Gifts to organisations: names are as the person entered them or chose them from a shared list. Neither has been checked against CAC registration (Q17).',
   'Customary and Islamic law: no limits on who may receive what have been applied or checked (Q5).',
@@ -257,7 +293,7 @@ const noteSections = (input: DraftInput): DraftSection[] => {
               ASSET_TYPE_LABELS[a.type],
               a.description,
               a.institution ? `held at ${a.institution}` : null,
-              `rough value ${formatValue(a.roughValue, a.currency)}`,
+              a.roughValue === null ? null : `rough value ${plainAmount(a.roughValue, a.currency)}`,
               a.notes ? `notes: ${a.notes}` : null,
             ];
             return parts.filter(Boolean).join('; ');
@@ -266,7 +302,11 @@ const noteSections = (input: DraftInput): DraftSection[] => {
   });
 
   const people = input.beneficiaries.map(b => {
-    const parts = [describe(b), b.contact, b.dateOfBirth ? `born ${b.dateOfBirth}` : null];
+    const parts = [
+      describe(b),
+      b.contact,
+      b.dateOfBirth ? `born ${formatLongDate(b.dateOfBirth)}` : null,
+    ];
     return parts.filter(Boolean).join('; ');
   });
   const named = input.executors.map(x => [x.name, x.kind, x.contact].filter(Boolean).join('; '));
@@ -282,25 +322,64 @@ const noteSections = (input: DraftInput): DraftSection[] => {
 
 export const buildDraftWill = (input: DraftInput): DraftWill => {
   const people = new Map(input.beneficiaries.map(b => [b.id, b]));
+  const name = input.testatorName.toUpperCase();
   return {
-    title: `DRAFT LAST WILL AND TESTAMENT OF ${input.testatorName.toUpperCase()}`,
-    banner: `DRAFT FOR LAWYER REVIEW. Prepared with Heartwood on ${input.preparedOn} from the person's own instructions. This is not a valid will. It becomes one only after a lawyer has reviewed and corrected it and it has been signed and witnessed as the law requires.`,
-    will: willSections(input, people),
-    notes: noteSections(input),
+    testatorName: input.testatorName,
+    preparedAt: input.preparedAt,
+    reference: null,
+    will: {
+      title: `DRAFT LAST WILL AND TESTAMENT OF ${name}`,
+      banner: `DRAFT FOR LAWYER REVIEW. Prepared with Heartwood on ${input.preparedAt} from the person's own instructions. This is not a valid will. It becomes one only after a lawyer has reviewed and corrected it and it has been signed and witnessed as the law requires.`,
+      sections: willSections(input, people),
+    },
+    notes: {
+      title: `NOTES FOR THE REVIEWING LAWYER: DRAFT WILL OF ${name}`,
+      banner: `NOT PART OF THE WILL. Prepared with Heartwood on ${input.preparedAt} to help the lawyer who reviews the draft will. It is a summary of what the person entered, not legal advice, and it binds no one.`,
+      sections: noteSections(input),
+    },
   };
 };
 
-/** The whole draft as plain text, for sharing from a phone or pasting into an email. */
-export const draftToText = (draft: DraftWill): string => {
-  const block = (s: DraftSection, index?: number) => {
-    const heading = index === undefined ? s.heading : `${index + 1}. ${s.heading}`;
-    return [heading.toUpperCase(), ...s.paragraphs].join('\n\n');
-  };
+/** One section as text: its heading, its paragraphs, then each smaller part numbered under it (4.1, 4.2). */
+const sectionText = (section: DraftSection, number?: string): string => {
+  const title = number ? `${number}. ${section.heading}` : section.heading;
+  const parts = (section.subsections ?? []).map((sub, i) =>
+    [`${number ?? ''}${number ? '.' : ''}${i + 1} ${sub.heading}`, ...sub.paragraphs].join('\n\n')
+  );
+  return [title.toUpperCase(), ...section.paragraphs, ...parts].join('\n\n');
+};
+
+/** One document as plain text, for sharing from a phone or pasting into an email. */
+export const documentToText = (draft: DraftWill, key: DraftDocumentKey): string => {
+  const doc = draft[key];
+  const numbered = key === 'will';
   return [
-    draft.title,
-    draft.banner,
-    ...draft.will.map(block),
-    'NOTES FOR THE REVIEWING LAWYER (NOT PART OF THE WILL)',
-    ...draft.notes.map(s => block(s)),
-  ].join('\n\n');
+    doc.title,
+    doc.banner,
+    draft.reference ? `Reference: ${draft.reference}` : null,
+    ...doc.sections.map((section, index) =>
+      sectionText(section, numbered ? String(index + 1) : undefined)
+    ),
+  ]
+    .filter((part): part is string => part !== null)
+    .join('\n\n');
+};
+
+/**
+ * The name of a downloaded file: what it is, then whose it is, in plain letters and hyphens, such as
+ * "draft-will-ngozi-eze.pdf". Accents are folded (Ọlá becomes ola) so the name is safe in any header.
+ */
+export const draftFileName = (
+  document: DraftDocumentKey,
+  personName: string,
+  format: 'pdf' | 'docx'
+): string => {
+  const what = document === 'will' ? 'draft-will' : 'notes-for-lawyer';
+  const who = personName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return `${[what, who].filter(Boolean).join('-')}.${format}`;
 };

@@ -1,6 +1,12 @@
 import bcrypt from 'bcryptjs';
 import type { DbClient } from '@heartwood/database';
-import type { AuthResponse, LoginInput, PublicAccount, RegisterInput } from '@heartwood/shared';
+import type {
+  AuthResponse,
+  LoginInput,
+  ProfileUpdate,
+  PublicAccount,
+  RegisterInput,
+} from '@heartwood/shared';
 import {
   ACCESS_TTL_SECONDS,
   REFRESH_TTL_MS,
@@ -17,7 +23,9 @@ import {
   insertRefreshToken,
   revokeAllRefreshTokens,
   revokeRefreshToken,
+  updateAccountProfile,
 } from './account.repository';
+import { recordAudit } from '../audit/audit.service';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -53,7 +61,9 @@ export const findPublicAccountByEmail = async (
   email: string
 ): Promise<PublicAccount | null> => {
   const found = await findAccountByEmail(db, email);
-  return found ? { id: found.id, email: found.email, name: found.name } : null;
+  return found
+    ? { id: found.id, email: found.email, name: found.name, address: found.address }
+    : null;
 };
 
 export const registerAccount = async (
@@ -75,7 +85,7 @@ export const loginAccount = async (
   const matches = await bcrypt.compare(input.password, found?.password_hash ?? DUMMY_HASH);
   // Same message whether the email or the password was wrong.
   if (!found || !matches) throw unauthorized('Incorrect email or password');
-  const account = { id: found.id, email: found.email, name: found.name };
+  const account = { id: found.id, email: found.email, name: found.name, address: found.address };
   return { account, ...(await issueTokens(db, account, secret)) };
 };
 
@@ -112,3 +122,25 @@ export const getAccount = async (db: DbClient, id: string): Promise<PublicAccoun
   if (!account) throw unauthorized();
   return account;
 };
+
+/** Changes the person's own name or address. Fields left out stay as they are. */
+export const updateProfile = (
+  db: DbClient,
+  id: string,
+  input: ProfileUpdate
+): Promise<PublicAccount> =>
+  db.transaction().execute(async trx => {
+    const account = await updateAccountProfile(trx, id, {
+      name: input.name,
+      address: input.address,
+    });
+    if (!account) throw unauthorized();
+    await recordAudit(trx, {
+      actorId: id,
+      entity: 'account',
+      entityId: id,
+      action: 'update',
+      snapshot: { name: account.name, address: account.address },
+    });
+    return account;
+  });

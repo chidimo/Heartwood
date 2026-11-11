@@ -13,6 +13,8 @@ interface AuthValue {
   signIn: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Replaces the signed-in person's details after they change them (their profile). */
+  updateAccount: (account: PublicAccount) => void;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -73,6 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         finishSignIn(
           await postJson<AuthResponse>('/auth/register', { name, email, password }, { auth: false })
         ),
+      updateAccount: setAccount,
       signOut: async () => {
         const tokens = getTokens();
         if (tokens) {

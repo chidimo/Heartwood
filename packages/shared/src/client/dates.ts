@@ -43,8 +43,33 @@ const MONTHS = [
   'December',
 ];
 
-/** "2012-06-15" -> "15 June 2012". */
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** "2012-06-15" -> "Friday, 15 June 2012": the one way a date is written in the app and its documents. */
 export const formatLongDate = (iso: string): string => {
   const [year, month, day] = iso.split('-').map(Number);
-  return `${day} ${MONTHS[month - 1]} ${year}`;
+  const weekday = WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return `${weekday}, ${day} ${MONTHS[month - 1]} ${year}`;
+};
+
+// The app is for Nigeria, so a moment reads in Lagos time whatever the device or server clock says.
+const TIMESTAMP = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Africa/Lagos',
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h12',
+});
+
+/** A moment as "Wednesday, 11 November 2026 at 2:32:09 pm", in Lagos time. Use it wherever a time is shown. */
+export const formatTimestamp = (date: Date): string => {
+  const parts = TIMESTAMP.formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find(p => p.type === type)?.value ?? '';
+  const clock = `${part('hour')}:${part('minute')}:${part('second')} ${part('dayPeriod').toLowerCase()}`;
+  return `${part('weekday')}, ${part('day')} ${part('month')} ${part('year')} at ${clock}`;
 };

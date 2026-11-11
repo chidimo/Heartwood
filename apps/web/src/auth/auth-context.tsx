@@ -58,6 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         finishSignIn(
           await postJson<AuthResponse>('/auth/register', { name, email, password }, { auth: false })
         ),
+      updateAccount: setAccount,
       signOut: async () => {
         const refreshToken = localStorage.getItem('heartwood.refreshToken');
         if (refreshToken) {

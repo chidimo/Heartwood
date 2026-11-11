@@ -15,6 +15,7 @@ import { DraftWillPage } from './pages/draft-will';
 import { ExecutorsPage } from './pages/executors';
 import { LoginPage } from './pages/login';
 import { OrganizationsPage } from './pages/organizations';
+import { ProfilePage } from './pages/profile';
 import { RegisterPage } from './pages/register';
 import { ResiduaryPage } from './pages/residuary';
 import { ReviewPage } from './pages/review';
@@ -60,6 +61,7 @@ export const createAppRouter = (history?: RouterHistory) =>
         route('/residuary', ResiduaryPage),
         route('/review', ReviewPage),
         route('/draft', DraftWillPage),
+        route('/profile', ProfilePage),
       ]),
     ]),
   });

@@ -11,7 +11,7 @@ export const findAccountByEmail = (db: DbClient, email: string) =>
 export const findAccountById = (db: DbClient, id: string) =>
   db
     .selectFrom('account')
-    .select(['id', 'email', 'name'])
+    .select(['id', 'email', 'name', 'address'])
     .where('id', '=', id)
     .where('deleted_at', 'is', null)
     .executeTakeFirst();
@@ -23,8 +23,21 @@ export const insertAccount = (
   db
     .insertInto('account')
     .values(values)
-    .returning(['id', 'email', 'name'])
+    .returning(['id', 'email', 'name', 'address'])
     .executeTakeFirstOrThrow();
+
+export const updateAccountProfile = (
+  db: DbClient,
+  id: string,
+  values: { name?: string; address?: string | null }
+) =>
+  db
+    .updateTable('account')
+    .set({ ...values, updated_at: new Date() })
+    .where('id', '=', id)
+    .where('deleted_at', 'is', null)
+    .returning(['id', 'email', 'name', 'address'])
+    .executeTakeFirst();
 
 export const insertRefreshToken = (
   db: DbClient,

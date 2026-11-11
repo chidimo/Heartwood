@@ -37,6 +37,11 @@ const DrawerLayout = () => {
       />
       <Drawer.Screen name="review" options={{ title: 'Review', drawerLabel: 'Review' }} />
       <Drawer.Screen name="draft" options={{ title: 'Draft will', drawerLabel: 'Draft will' }} />
+      {/* Opened from the name at the bottom of the sidebar, so it has no menu entry of its own. */}
+      <Drawer.Screen
+        name="profile"
+        options={{ title: 'Profile', drawerItemStyle: { display: 'none' } }}
+      />
     </Drawer>
   );
 };

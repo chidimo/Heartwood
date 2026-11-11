@@ -1,77 +1,74 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import type { DraftSection } from '@heartwood/shared';
+import type { DraftDocumentKey } from '@heartwood/shared';
 import { getErrorMessage } from '../api/client';
 import { Button } from '../components/button';
 import { Heading } from '../components/layout';
+import { PdfViewer } from '../components/pdf-viewer';
 import { QueryState } from '../components/query-state';
-import { downloadDraftWord, useDraftWill } from '../features/api';
+import { Segmented } from '../components/segmented';
+import { downloadDraft, openDraftPdf, useDraftPdf, useDraftWill } from '../features/api';
 
-const Clauses = ({ sections, numbered }: { sections: DraftSection[]; numbered: boolean }) => (
-  <>
-    {sections.map((section, index) => (
-      <section key={section.heading} className="flex flex-col gap-2">
-        <h3 className="font-semibold">
-          {numbered ? `${index + 1}. ` : ''}
-          {section.heading}
-        </h3>
-        {section.paragraphs.map((text, i) => (
-          <p key={`${i}-${text}`} className="leading-relaxed">
-            {text}
-          </p>
-        ))}
-      </section>
-    ))}
-  </>
-);
+const DOCUMENTS = [
+  { value: 'will', label: 'Draft will' },
+  { value: 'notes', label: 'Notes for the lawyer' },
+] as const;
 
+/** The draft, as two separate documents, each shown as the PDF a lawyer would receive. */
 export const DraftWillPage = () => {
+  const [document, setDocument] = useState<DraftDocumentKey>('will');
   const draft = useDraftWill();
-  const [isDownloading, setIsDownloading] = useState(false);
+  const pdf = useDraftPdf(document);
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
+  const run = async (action: () => Promise<void>) => {
     try {
-      await downloadDraftWord();
+      await action();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Couldn't download the draft. Try again."));
-    } finally {
-      setIsDownloading(false);
+      toast.error(getErrorMessage(error, "Couldn't open the document. Try again."));
     }
   };
 
+  const name = draft.data?.testatorName ?? '';
+  const label = DOCUMENTS.find(d => d.value === document)?.label ?? 'Draft';
+
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Heading>Draft will</Heading>
-        <div className="flex gap-3">
-          <Button onClick={() => void handleDownload()} loading={isDownloading}>
-            Download Word document
-          </Button>
-          <Button variant="secondary" onClick={() => window.print()}>
-            Print
-          </Button>
-        </div>
+      <Heading>Draft will</Heading>
+      <Segmented
+        label="Which document"
+        value={document}
+        options={DOCUMENTS}
+        onChange={setDocument}
+      />
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={() => void run(() => downloadDraft(document, 'pdf', name))}>
+          Download PDF
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => void run(() => downloadDraft(document, 'docx', name))}
+        >
+          Download Word
+        </Button>
+        <Button variant="secondary" onClick={() => void run(() => openDraftPdf(document))}>
+          Open to print
+        </Button>
       </div>
-      <QueryState query={draft}>
-        {data => (
-          <div className="flex flex-col gap-6">
-            <p className="rounded-xl border border-warning/50 bg-warning/10 p-4 text-sm">
-              {data.banner}
-            </p>
-            <article className="flex flex-col gap-5 rounded-xl border border-primary-600/20 p-6">
-              <h2 className="text-center text-lg font-semibold">{data.title}</h2>
-              <Clauses sections={data.will} numbered />
-            </article>
-            <article className="flex flex-col gap-5 rounded-xl border border-primary-600/20 p-6 print:break-before-page">
-              <h2 className="text-lg font-semibold">
-                Notes for the reviewing lawyer (not part of the will)
-              </h2>
-              <Clauses sections={data.notes} numbered={false} />
-            </article>
-          </div>
-        )}
-      </QueryState>
+      {draft.data?.reference && (
+        <p className="text-sm text-ink/60 dark:text-white/60">
+          Prepared on {draft.data.preparedAt}. Reference {draft.data.reference}: every page of the
+          PDF carries it, so a lawyer can check a copy against ours.
+        </p>
+      )}
+      {/* The pages scroll inside this pane, so the buttons above stay in view. */}
+      <div
+        aria-label={`${label}, scrollable`}
+        className="h-[calc(100dvh-18rem)] min-h-96 overflow-y-auto rounded-xl border border-primary-600/20 bg-primary-600/5 p-4"
+      >
+        <QueryState query={pdf}>
+          {data => <PdfViewer key={document} data={data} label={label} />}
+        </QueryState>
+      </div>
     </>
   );
 };

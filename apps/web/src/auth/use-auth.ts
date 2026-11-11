@@ -9,6 +9,8 @@ export interface AuthValue {
   signIn: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Replaces the signed-in person's details after they change them (their profile). */
+  updateAccount: (account: PublicAccount) => void;
 }
 
 export const AuthContext = createContext<AuthValue | null>(null);

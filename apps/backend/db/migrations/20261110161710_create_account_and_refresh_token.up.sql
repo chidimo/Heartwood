@@ -5,6 +5,8 @@ CREATE TABLE account (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL,
   name TEXT NOT NULL,
+  -- Where the testator lives, for the opening line of the draft will. Free text; optional.
+  address TEXT CHECK (char_length(address) <= 500),
   password_hash TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

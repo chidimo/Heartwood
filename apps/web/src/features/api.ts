@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { draftFileName } from '@heartwood/shared';
 import type {
   AllocationDto,
   AllocationEntry,
@@ -9,7 +10,10 @@ import type {
   BeneficiaryInput,
   BeneficiaryUpdate,
   DirectoryPage,
+  DraftDocumentKey,
   DraftWill,
+  ProfileUpdate,
+  PublicAccount,
   DirectorySearch,
   ExecutorDto,
   ExecutorInput,
@@ -56,14 +60,34 @@ export const useOrganizationStates = () =>
 export const useDraftWill = () =>
   useQuery({ queryKey: ['draft-will'], queryFn: () => apiFetch<DraftWill>('/draft-will') });
 
-/** Saves the Word version of the draft through the browser's download. */
-export const downloadDraftWord = async () => {
-  const url = URL.createObjectURL(await apiBlob('/draft-will/docx'));
-  const link = document.createElement('a');
+const draftPath = (document: DraftDocumentKey, format: 'pdf' | 'docx') =>
+  `/draft-will/${document}.${format}`;
+
+/** One document of the draft as PDF bytes, for the viewer. */
+export const useDraftPdf = (document: DraftDocumentKey) =>
+  useQuery({
+    queryKey: ['draft-pdf', document],
+    queryFn: async () => (await apiBlob(draftPath(document, 'pdf'))).arrayBuffer(),
+  });
+
+/** Saves a document of the draft through the browser's download, named for whose it is. */
+export const downloadDraft = async (
+  document: DraftDocumentKey,
+  format: 'pdf' | 'docx',
+  personName: string
+) => {
+  const url = URL.createObjectURL(await apiBlob(draftPath(document, format)));
+  const link = window.document.createElement('a');
   link.href = url;
-  link.download = 'draft-will.docx';
+  link.download = draftFileName(document, personName, format);
   link.click();
   URL.revokeObjectURL(url);
+};
+
+/** Opens the PDF in its own tab, where the browser's viewer can print it with every mark intact. */
+export const openDraftPdf = async (document: DraftDocumentKey) => {
+  const url = URL.createObjectURL(await apiBlob(draftPath(document, 'pdf')));
+  window.open(url, '_blank');
 };
 
 export const useAllocations = (assetId: string) =>
@@ -187,6 +211,15 @@ export const useDeleteExecutor = (id: string) => {
   const refresh = useRefreshAfterWrite();
   return useMutation({
     mutationFn: () => apiFetch<void>(`/executors/${id}`, { method: 'DELETE' }),
+    onSuccess: refresh,
+  });
+};
+
+export const useUpdateProfile = () => {
+  const refresh = useRefreshAfterWrite();
+  return useMutation({
+    mutationFn: (input: ProfileUpdate) =>
+      apiFetch<PublicAccount>('/auth/me', { method: 'PATCH', body: JSON.stringify(input) }),
     onSuccess: refresh,
   });
 };

@@ -496,3 +496,6 @@ export interface DirectoryPage {
   total: number;
   totalPages: number;
 }
+
+/** Which of the draft's two documents: the will, or the lawyer's notes. */
+export const draftDocumentParamSchema = z.object({ document: z.enum(['will', 'notes']) });

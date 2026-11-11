@@ -7,6 +7,8 @@ import type {
   BeneficiaryUpdate,
   DirectoryPage,
   DraftWill,
+  ProfileUpdate,
+  PublicAccount,
   DirectorySearch,
   ExecutorDto,
   ExecutorInput,
@@ -211,6 +213,15 @@ export const useDeleteExecutor = (id: string) => {
   const refresh = useRefreshAfterWrite();
   return useMutation({
     mutationFn: () => apiFetch<void>(`/executors/${id}`, { method: 'DELETE' }),
+    onSuccess: refresh,
+  });
+};
+
+export const useUpdateProfile = () => {
+  const refresh = useRefreshAfterWrite();
+  return useMutation({
+    mutationFn: (input: ProfileUpdate) =>
+      apiFetch<PublicAccount>('/auth/me', { method: 'PATCH', body: JSON.stringify(input) }),
     onSuccess: refresh,
   });
 };

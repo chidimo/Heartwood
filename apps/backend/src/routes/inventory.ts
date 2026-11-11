@@ -6,6 +6,9 @@ import {
   beneficiaryInputSchema,
   beneficiaryUpdateSchema,
   directorySearchSchema,
+  draftDocumentParamSchema,
+  draftFileName,
+  type DraftDocumentKey,
   executorInputSchema,
   executorUpdateSchema,
   replaceAllocationsSchema,
@@ -14,6 +17,7 @@ import {
 } from '@heartwood/shared';
 import { getDraftWill } from '../modules/draft-will/draft-will.service';
 import { renderDraftDocx } from '../modules/draft-will/draft-will.docx';
+import { renderDraftPdf } from '../modules/draft-will/draft-will.pdf';
 import { createAuthenticate, requireAccountId } from '../middleware/authenticate';
 import { parseBody } from '../middleware/validate';
 import { getResiduary } from '../modules/allocation/allocation.service';
@@ -49,6 +53,9 @@ import {
 } from '../modules/organization-directory/organization-directory.service';
 import { idParam } from '../utils/params';
 import { created, noContent, ok } from '../utils/response';
+
+const attachment = (document: DraftDocumentKey, personName: string, format: 'pdf' | 'docx') =>
+  `attachment; filename="${draftFileName(document, personName, format)}"`;
 
 /** Everything a testator keeps: every route is behind `authenticate` and scoped to the caller. */
 export function createInventoryRoutes(db: DbClient, authSecret: string) {
@@ -177,13 +184,34 @@ export function createInventoryRoutes(db: DbClient, authSecret: string) {
   router.get('/draft-will', async (req, res) =>
     ok(res, await getDraftWill(db, requireAccountId(req)))
   );
-  router.get('/draft-will/docx', async (req, res) => {
-    const file = await renderDraftDocx(await getDraftWill(db, requireAccountId(req)));
+  // The two documents of the draft, each as a PDF (to read and print) or a Word file (to edit).
+  router.get('/draft-will/:document.pdf', async (req, res) => {
+    const { document } = parseBody(draftDocumentParamSchema, req.params);
+    const draft = await getDraftWill(db, requireAccountId(req));
+    const file = await renderDraftPdf(draft[document], document, {
+      reference: draft.reference,
+      preparedAt: draft.preparedAt,
+    });
+    res
+      .status(200)
+      .set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': attachment(document, draft.testatorName, 'pdf'),
+      })
+      .send(file);
+  });
+  router.get('/draft-will/:document.docx', async (req, res) => {
+    const { document } = parseBody(draftDocumentParamSchema, req.params);
+    const draft = await getDraftWill(db, requireAccountId(req));
+    const file = await renderDraftDocx(draft[document], document, {
+      reference: draft.reference,
+      preparedAt: draft.preparedAt,
+    });
     res
       .status(200)
       .set({
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': 'attachment; filename="draft-will.docx"',
+        'Content-Disposition': attachment(document, draft.testatorName, 'docx'),
       })
       .send(file);
   });

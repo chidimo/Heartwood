@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { isoFromDate } from '@heartwood/shared';
+import { formatLongDate, isoFromDate } from '@heartwood/shared';
 import { CONTROL, Field } from './field';
 
 interface Props {
@@ -15,8 +15,10 @@ interface Props {
 /** A date chosen with the browser's date picker, never typed in a format someone has to guess. */
 export const DateField = ({ label, value, onChange, maxDate = new Date(), hint }: Props) => {
   const id = useId();
+  // Spell the chosen date out, so it reads the same here as in the documents.
+  const spelledOut = [value ? formatLongDate(value) : null, hint].filter(Boolean).join('. ');
   return (
-    <Field label={label} htmlFor={id} hint={hint}>
+    <Field label={label} htmlFor={id} hint={spelledOut || undefined}>
       <input
         id={id}
         type="date"

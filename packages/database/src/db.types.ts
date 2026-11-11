@@ -26,6 +26,7 @@ export type Numeric = ColumnType<string, number | string, number | string>;
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface Account {
+  address: string | null;
   created_at: Generated<Timestamp>;
   deleted_at: Timestamp | null;
   email: string;
@@ -89,6 +90,7 @@ export interface Beneficiary {
   date_of_birth: Timestamp | null;
   deleted_at: Timestamp | null;
   deleted_by: string | null;
+  directory_id: string | null;
   id: Generated<string>;
   institution_type: string | null;
   kind: Generated<string>;

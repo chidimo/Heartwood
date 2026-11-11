@@ -25,7 +25,12 @@ export const DrawerContent = (props: DrawerContentComponentProps) => {
         <DrawerItemList {...props} />
       </DrawerContentScrollView>
       <SafeAreaView edges={['bottom']} className="border-t border-primary-600/20">
-        <View className="flex-row items-center gap-3 px-4 py-3">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Your profile"
+          onPress={() => props.navigation.navigate('profile')}
+          className="flex-row items-center gap-3 px-4 py-3"
+        >
           <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-600/20">
             <Text className="text-xs font-semibold text-primary-700 dark:text-primary-200">
               {initials}
@@ -39,7 +44,7 @@ export const DrawerContent = (props: DrawerContentComponentProps) => {
               {account?.email}
             </Text>
           </View>
-        </View>
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           onPress={handleSignOut}
