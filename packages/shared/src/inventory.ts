@@ -161,6 +161,12 @@ export const beneficiaryInputSchema = z
       .enum(INSTITUTION_TYPES)
       .nullish()
       .transform(v => v ?? null),
+    // Set when the organisation was picked from our list rather than typed in.
+    directoryId: z
+      .string()
+      .uuid()
+      .nullish()
+      .transform(v => v ?? null),
     contact: plainOptionalText(200),
     address: plainOptionalText(500),
     dateOfBirth: isoDate.nullish().transform(v => v ?? null),
@@ -180,6 +186,7 @@ export const beneficiaryInputSchema = z
         issue('relationshipOther', 'Only "other" needs the relationship in words');
       }
       if (v.institutionType) issue('institutionType', 'Only an organisation has a type');
+      if (v.directoryId) issue('directoryId', 'Only an organisation can come from our list');
       return;
     }
     if (!v.institutionType) issue('institutionType', 'Choose the kind of organisation');
@@ -198,6 +205,7 @@ export const beneficiaryUpdateSchema = z
     relationship: z.enum(RELATIONSHIPS).nullable().optional(),
     relationshipOther: z.string().trim().min(1).max(100).nullable().optional(),
     institutionType: z.enum(INSTITUTION_TYPES).optional(),
+    directoryId: z.string().uuid().nullable().optional(),
     contact: z.string().trim().max(200).nullable().optional(),
     address: z.string().trim().max(500).nullable().optional(),
     dateOfBirth: isoDate.nullable().optional(),
@@ -223,6 +231,8 @@ export interface BeneficiaryDto {
   relationshipOther: string | null;
   /** What kind of organisation; null for a person. */
   institutionType: InstitutionType | null;
+  /** The entry in our organisation list this was picked from; null when typed in or a person. */
+  directoryId: string | null;
   contact: string | null;
   /** Where to reach them: free text. */
   address: string | null;
@@ -234,7 +244,7 @@ export interface BeneficiaryDto {
   updatedAt: string;
 }
 
-export const EXECUTOR_KINDS = ['executor', 'lawyer'] as const;
+export const EXECUTOR_KINDS = ['executor', 'lawyer', 'priest'] as const;
 export const executorInputSchema = z.object({
   kind: z.enum(EXECUTOR_KINDS),
   name: plainText(200),
@@ -425,4 +435,47 @@ export interface InventoryReport {
   /** True when there are no errors (warnings and info don't block a draft will). */
   ok: boolean;
   issues: InventoryIssue[];
+}
+
+// The shared list of organisations a testator can pick instead of typing one in.
+export const directoryEntryInputSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  institutionType: z.enum(INSTITUTION_TYPES),
+  state: z.string().trim().max(100).nullish(),
+  city: z.string().trim().max(100).nullish(),
+});
+export type DirectoryEntryInput = z.infer<typeof directoryEntryInputSchema>;
+
+export interface DirectoryEntry {
+  id: string;
+  name: string;
+  institutionType: InstitutionType;
+  state: string | null;
+  city: string | null;
+}
+
+export const DIRECTORY_MAX_PAGE_SIZE = 100;
+export const DIRECTORY_DEFAULT_PAGE_SIZE = 20;
+
+// Query-string values arrive as text, so numbers are coerced. The server clamps the page size again.
+export const directorySearchSchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  type: z.enum(INSTITUTION_TYPES).optional(),
+  state: z.string().trim().max(100).optional(),
+  page: z.coerce.number().int().min(1).max(10000).default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(DIRECTORY_MAX_PAGE_SIZE)
+    .default(DIRECTORY_DEFAULT_PAGE_SIZE),
+});
+export type DirectorySearch = z.infer<typeof directorySearchSchema>;
+
+export interface DirectoryPage {
+  items: DirectoryEntry[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }

@@ -3,6 +3,7 @@ import type { BeneficiaryDto, BeneficiaryInput, BeneficiaryUpdate } from '@heart
 import { conflict, notFoundError, unprocessable } from '../../utils/http-error';
 import { beneficiaryIsAllocated } from '../allocation/allocation.service';
 import { recordAudit } from '../audit/audit.service';
+import { assertDirectoryEntry } from '../organization-directory/organization-directory.service';
 import {
   countContingencyReferences,
   findBeneficiary,
@@ -30,6 +31,7 @@ const toDto = (row: Row): BeneficiaryDto => ({
   relationship: row.relationship as BeneficiaryDto['relationship'],
   relationshipOther: row.relationship_other,
   institutionType: row.institution_type as BeneficiaryDto['institutionType'],
+  directoryId: row.directory_id,
   contact: row.contact,
   address: row.address,
   dateOfBirth: dateOnly(row.date_of_birth),
@@ -54,6 +56,7 @@ const checkFitsKind = (existing: Row, input: BeneficiaryUpdate) => {
     if (input.institutionType !== undefined) {
       throw unprocessable('Only an organisation has a type');
     }
+    if (input.directoryId) throw unprocessable('Only an organisation can come from our list');
     // The relationship pair as it will be after this update must still make sense.
     const relationship =
       input.relationship === undefined ? existing.relationship : input.relationship;
@@ -94,6 +97,7 @@ const checkFallback = async (
 export const createBeneficiary = (db: DbClient, ownerId: string, input: BeneficiaryInput) =>
   db.transaction().execute(async trx => {
     await checkFallback(trx, ownerId, null, input.contingencyBeneficiaryId);
+    if (input.directoryId) await assertDirectoryEntry(trx, input.directoryId);
     const row = await insertBeneficiary(trx, {
       owner_id: ownerId,
       kind: input.kind,
@@ -101,6 +105,7 @@ export const createBeneficiary = (db: DbClient, ownerId: string, input: Benefici
       relationship: input.relationship,
       relationship_other: input.relationshipOther,
       institution_type: input.institutionType,
+      directory_id: input.directoryId,
       contact: input.contact,
       address: input.address,
       date_of_birth: input.dateOfBirth,
@@ -129,11 +134,13 @@ export const updateBeneficiary = (
     if (!existing) throw notFoundError('Beneficiary not found');
     checkFitsKind(existing, input);
     await checkFallback(trx, ownerId, id, input.contingencyBeneficiaryId);
+    if (input.directoryId) await assertDirectoryEntry(trx, input.directoryId);
     const row = await updateRow(trx, ownerId, id, {
       name: input.name,
       relationship: input.relationship,
       relationship_other: input.relationshipOther,
       institution_type: input.institutionType,
+      directory_id: input.directoryId,
       contact: input.contact,
       address: input.address,
       date_of_birth: input.dateOfBirth,

@@ -111,6 +111,16 @@ export interface Executor {
   updated_at: Generated<Timestamp>;
 }
 
+export interface OrganizationDirectory {
+  city: string | null;
+  created_at: Generated<Timestamp>;
+  id: Generated<string>;
+  institution_type: string;
+  name: string;
+  source: Generated<string>;
+  state: string | null;
+}
+
 export interface RefreshToken {
   account_id: string;
   created_at: Generated<Timestamp>;
@@ -138,6 +148,7 @@ export interface DB {
   audit_log: AuditLog;
   beneficiary: Beneficiary;
   executor: Executor;
+  organization_directory: OrganizationDirectory;
   refresh_token: RefreshToken;
   residuary_allocation: ResiduaryAllocation;
 }

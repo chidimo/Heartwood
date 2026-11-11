@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AllocationDto,
   AllocationEntry,
@@ -8,6 +8,8 @@ import type {
   BeneficiaryDto,
   BeneficiaryInput,
   BeneficiaryUpdate,
+  DirectoryPage,
+  DirectorySearch,
   ExecutorDto,
   ExecutorInput,
   ExecutorUpdate,
@@ -28,6 +30,28 @@ export const useBeneficiaries = () =>
   });
 export const useExecutors = () =>
   useQuery({ queryKey: ['executors'], queryFn: () => apiFetch<ExecutorDto[]>('/executors') });
+type DirectoryQuery = Partial<Omit<DirectorySearch, 'q'>> & { q?: string };
+
+/** One page of our organisation list, filtered and searched on the server. */
+export const useOrganizationDirectory = (search: DirectoryQuery) =>
+  useQuery({
+    queryKey: ['organization-directory', search],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(search)) {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      }
+      return apiFetch<DirectoryPage>(`/organization-directory?${params.toString()}`);
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
+  });
+export const useOrganizationStates = () =>
+  useQuery({
+    queryKey: ['organization-directory', 'states'],
+    queryFn: () => apiFetch<string[]>('/organization-directory/states'),
+    staleTime: 60 * 60 * 1000,
+  });
 export const useAllocations = (assetId: string) =>
   useQuery({
     queryKey: ['allocations', assetId],

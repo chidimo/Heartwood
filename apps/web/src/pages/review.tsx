@@ -44,13 +44,13 @@ const IssueRow = ({ issue }: { issue: InventoryIssue }) => {
   }
   if (issue.entity === 'beneficiary' && issue.id) {
     return (
-      <Link to="/people/$id" params={{ id: issue.id }} className={classes}>
+      <Link to="/beneficiaries" className={classes}>
         <IssueBody issue={issue} />
       </Link>
     );
   }
   return (
-    <Link to="/people/new" className={classes}>
+    <Link to="/beneficiaries" className={classes}>
       <IssueBody issue={issue} />
     </Link>
   );

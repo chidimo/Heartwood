@@ -1,6 +1,35 @@
 -- Migration: 20261110161714_create_beneficiary_allocation_executor
 -- Created at: 2026-11-10T16:17:14.143Z
 
+-- Trigram word similarity powers the organisation search (docs/standards/interactions.md Rule 7).
+-- 0.1 is the threshold that standard asks for: the 0.3 default is tuned for whole-string matching and
+-- would drop partial words. It is a database setting, so new connections pick it up.
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+DO $$
+BEGIN
+  EXECUTE format('ALTER DATABASE %I SET pg_trgm.word_similarity_threshold = 0.1', current_database());
+END
+$$;
+
+-- Reference data shared by everyone (not owned by an account): organisations a testator can pick
+-- instead of typing. Names, kind and place only; never contact details or registration numbers.
+CREATE TABLE organization_directory (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 200),
+  institution_type TEXT NOT NULL,
+  state TEXT CHECK (char_length(state) <= 100),
+  city TEXT CHECK (char_length(city) <= 100),
+  source TEXT NOT NULL DEFAULT 'starter',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX organization_directory_name_state_idx
+  ON organization_directory (lower(name), coalesce(state, ''));
+
+CREATE INDEX organization_directory_name_trgm_idx
+  ON organization_directory USING gin (name gin_trgm_ops);
+
 -- Who receives things: a person or an organisation (church, mosque, charity, school...). An
 -- organisation has a type and no relationship, date of birth or children to pass a gift to.
 CREATE TABLE beneficiary (
@@ -55,6 +84,8 @@ CREATE TABLE beneficiary (
       'other'
     )
   ),
+  -- Set when an organisation was picked from our list; NULL when typed in by hand. Organisations only.
+  directory_id UUID REFERENCES organization_directory (id),
   contact TEXT CHECK (char_length(contact) <= 200),
   -- Where to reach them (a person's home, an organisation's office). Free text. It is third-party
   -- personal data: see docs/standards/security.md.
@@ -95,6 +126,7 @@ CREATE TABLE beneficiary (
       AND date_of_birth IS NULL
     )
   ),
+  CONSTRAINT beneficiary_directory_organisation CHECK (directory_id IS NULL OR kind = 'institution'),
   CONSTRAINT beneficiary_institution_plan CHECK (
     kind = 'person'
     OR coalesce(contingency_plan, '') <> 'pass_to_descendants'
@@ -110,7 +142,7 @@ WHERE
 CREATE TABLE executor (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id UUID NOT NULL REFERENCES account (id),
-  kind TEXT NOT NULL CHECK (kind IN ('executor', 'lawyer')),
+  kind TEXT NOT NULL CHECK (kind IN ('executor', 'lawyer', 'priest')),
   name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 200),
   contact TEXT CHECK (char_length(contact) <= 200),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

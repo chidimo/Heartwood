@@ -14,6 +14,7 @@ const person = (id: string, name: string): BeneficiaryDto => ({
   relationship: 'son',
   relationshipOther: null,
   institutionType: null,
+  directoryId: null,
   contact: null,
   address: null,
   dateOfBirth: null,

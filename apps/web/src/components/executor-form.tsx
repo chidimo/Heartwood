@@ -1,24 +1,21 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate, useParams } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { EXECUTOR_KIND_OPTIONS, type ExecutorDto } from '@heartwood/shared';
 import { getErrorMessage } from '../api/client';
-import { Button } from '../components/button';
-import { Heading } from '../components/layout';
-import { QueryState } from '../components/query-state';
-import { Segmented } from '../components/segmented';
-import { TextField } from '../components/text-field';
-import {
-  useCreateExecutor,
-  useDeleteExecutor,
-  useExecutors,
-  useUpdateExecutor,
-} from '../features/api';
+import { useCreateExecutor, useDeleteExecutor, useUpdateExecutor } from '../features/api';
 import { confirmDestructive } from '../lib/confirm';
+import { Button } from './button';
+import { Segmented } from './segmented';
+import { TextField } from './text-field';
 
-const ExecutorForm = ({ existing }: { existing: ExecutorDto | null }) => {
-  const navigate = useNavigate();
+interface Props {
+  /** The person being edited, or null to add one. */
+  existing: ExecutorDto | null;
+  onDone: () => void;
+}
+
+export const ExecutorForm = ({ existing, onDone }: Props) => {
   const id = existing?.id ?? '';
   const create = useCreateExecutor();
   const update = useUpdateExecutor(id);
@@ -30,7 +27,7 @@ const ExecutorForm = ({ existing }: { existing: ExecutorDto | null }) => {
 
   const handleDone = (message: string) => {
     toast.success(message);
-    void navigate({ to: '/executors' });
+    onDone();
   };
   const handleFailed = (error: unknown) =>
     toast.error(getErrorMessage(error, 'Something went wrong. Try again.'));
@@ -71,21 +68,5 @@ const ExecutorForm = ({ existing }: { existing: ExecutorDto | null }) => {
         )}
       </div>
     </form>
-  );
-};
-
-export const ExecutorFormPage = () => {
-  const { id } = useParams({ strict: false }) as { id?: string };
-  const executors = useExecutors();
-  return (
-    <>
-      <Heading>{id ? 'Edit' : 'Add an executor or lawyer'}</Heading>
-      <QueryState query={executors}>
-        {list => {
-          const existing = id ? (list.find(x => x.id === id) ?? null) : null;
-          return <ExecutorForm key={existing?.id ?? 'new'} existing={existing} />;
-        }}
-      </QueryState>
-    </>
   );
 };

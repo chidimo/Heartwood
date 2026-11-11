@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import {
+  Building2,
   ClipboardCheck,
   LogOut,
   PieChart,
@@ -12,14 +13,15 @@ import {
 import { cn } from '../lib/cn';
 
 interface NavItem {
-  to: '/assets' | '/people' | '/executors' | '/residuary' | '/review';
+  to: '/assets' | '/beneficiaries' | '/organizations' | '/executors' | '/residuary' | '/review';
   label: string;
   icon: LucideIcon;
 }
 
 const NAV: NavItem[] = [
   { to: '/assets', label: 'Assets', icon: Wallet },
-  { to: '/people', label: 'People', icon: Users },
+  { to: '/beneficiaries', label: 'Beneficiaries', icon: Users },
+  { to: '/organizations', label: 'Organisations', icon: Building2 },
   { to: '/executors', label: 'Executors and lawyers', icon: Scale },
   { to: '/residuary', label: 'Everything else', icon: PieChart },
   { to: '/review', label: 'Review', icon: ClipboardCheck },

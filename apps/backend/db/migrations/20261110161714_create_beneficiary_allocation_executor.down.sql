@@ -9,3 +9,5 @@ DROP TABLE allocation;
 DROP TABLE executor;
 
 DROP TABLE beneficiary;
+
+DROP TABLE organization_directory;

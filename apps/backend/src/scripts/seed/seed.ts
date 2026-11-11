@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { DbClient } from '@heartwood/database';
 import {
   assetInputSchema,
+  directoryEntryInputSchema,
   CONDITION_KINDS,
   beneficiaryInputSchema,
   executorInputSchema,
@@ -17,6 +18,10 @@ import {
   createBeneficiary,
   listBeneficiaries,
 } from '../../modules/beneficiary/beneficiary.service';
+import {
+  addDirectoryEntries,
+  directoryIdForName,
+} from '../../modules/organization-directory/organization-directory.service';
 import { createExecutor } from '../../modules/executor/executor.service';
 import {
   replaceAssetAllocations,
@@ -80,7 +85,13 @@ const seedInventory = async (db: DbClient, ownerId: string, inventory: Inventory
   }
   const beneficiaries = new Map<string, string>();
   for (const input of inventory.beneficiaries) {
-    beneficiaries.set(input.name, (await createBeneficiary(db, ownerId, input)).id);
+    // An organisation whose name is in our list is linked to it, as if picked from the dropdown.
+    const directoryId =
+      input.kind === 'institution' ? await directoryIdForName(db, input.name) : null;
+    beneficiaries.set(
+      input.name,
+      (await createBeneficiary(db, ownerId, { ...input, directoryId })).id
+    );
   }
   const executors = new Map<string, string>();
   for (const input of inventory.executors) {
@@ -129,6 +140,11 @@ export interface SeedResult {
 
 /** Seeds every account in data/accounts.json. Safe to run again: it never duplicates anything. */
 export const runSeed = async (db: DbClient, log: (line: string) => void = () => {}) => {
+  const added = await addDirectoryEntries(
+    db,
+    z.array(directoryEntryInputSchema).parse(readJson('organization-directory.json'))
+  );
+  log(`organisation directory: ${added} added`);
   const accounts = accountsFile.parse(readJson('accounts.json'));
   const results: SeedResult[] = [];
 

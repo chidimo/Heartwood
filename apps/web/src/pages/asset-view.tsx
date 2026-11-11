@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { ASSET_TYPE_LABELS, formatValue, type AssetDto } from '@heartwood/shared';
 import { getErrorMessage } from '../api/client';
+import { AssetForm } from '../components/asset-form';
 import { Button } from '../components/button';
 import { Distribution } from '../components/distribution';
 import { Heading } from '../components/layout';
+import { Modal } from '../components/modal';
 import { QueryState } from '../components/query-state';
 import {
   useAllocations,
@@ -12,6 +15,7 @@ import {
   useBeneficiaries,
   useDeleteAsset,
   useExecutors,
+  useUpdateAsset,
 } from '../features/api';
 import { confirmDestructive } from '../lib/confirm';
 
@@ -39,6 +43,8 @@ const AssetDistribution = ({ assetId }: { assetId: string }) => {
 const AssetView = ({ asset }: { asset: AssetDto }) => {
   const navigate = useNavigate();
   const remove = useDeleteAsset(asset.id);
+  const update = useUpdateAsset(asset.id);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleDelete = () => {
     if (
@@ -69,13 +75,9 @@ const AssetView = ({ asset }: { asset: AssetDto }) => {
           {formatValue(asset.roughValue, asset.currency)}
         </p>
         {asset.notes && <p className="mt-2 text-ink/70 dark:text-white/70">{asset.notes}</p>}
-        <Link
-          to="/assets/$id/details"
-          params={{ id: asset.id }}
-          className="text-primary-600 hover:underline dark:text-primary-200"
-        >
+        <Button variant="link" onClick={() => setIsEditing(true)} className="self-start">
           Edit details
-        </Link>
+        </Button>
       </div>
       <h2 className="text-lg font-semibold">Who gets it?</h2>
       <AssetDistribution assetId={asset.id} />
@@ -91,6 +93,24 @@ const AssetView = ({ asset }: { asset: AssetDto }) => {
           Remove this asset
         </Button>
       </div>
+      {isEditing && (
+        <Modal title="Edit asset" onClose={() => setIsEditing(false)}>
+          <AssetForm
+            existing={asset}
+            submitLabel="Save changes"
+            isPending={update.isPending}
+            onSubmit={input =>
+              update.mutate(input, {
+                onSuccess: () => {
+                  toast.success('Saved');
+                  setIsEditing(false);
+                },
+                onError: error => toast.error(getErrorMessage(error, "Couldn't save. Try again.")),
+              })
+            }
+          />
+        </Modal>
+      )}
     </>
   );
 };

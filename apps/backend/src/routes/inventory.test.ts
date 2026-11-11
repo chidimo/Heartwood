@@ -2,6 +2,7 @@ import request from 'supertest';
 import { INSTITUTION_TYPES, RELATIONSHIPS, ageInYears } from '@heartwood/shared';
 import { createTestApp, registerTestUser } from '../test-utils/test-app';
 import { useTestDb } from '../test-utils/useTestDb';
+import { addDirectoryEntries } from '../modules/organization-directory/organization-directory.service';
 
 describe('inventory', () => {
   const db = useTestDb();
@@ -1137,7 +1138,95 @@ describe('inventory', () => {
     });
   });
 
+  describe('organization directory', () => {
+    const entries = [
+      { name: 'Grace Chapel, Ikeja', institutionType: 'church' as const, state: 'Lagos' },
+      { name: 'Grace Hospital', institutionType: 'hospital' as const, state: 'Lagos' },
+      { name: 'Hope Clinic', institutionType: 'hospital' as const, state: 'Ogun' },
+    ];
+
+    it('searches, filters and pages, and needs a session', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      await addDirectoryEntries(db, entries);
+      const names = (r: { body: { items: { name: string }[] } }) => r.body.items.map(i => i.name);
+
+      const byName = await api.get('/api/organization-directory?q=grace');
+      expect(names(byName).sort()).toEqual(['Grace Chapel, Ikeja', 'Grace Hospital']);
+      expect(byName.body).toMatchObject({ page: 1, total: 2, totalPages: 1 });
+
+      const typo = await api.get('/api/organization-directory?q=gracee');
+      expect(names(typo)).toContain('Grace Hospital');
+
+      const byType = await api.get('/api/organization-directory?type=hospital');
+      expect(names(byType)).toEqual(['Grace Hospital', 'Hope Clinic']);
+      const byState = await api.get('/api/organization-directory?type=hospital&state=Ogun');
+      expect(names(byState)).toEqual(['Hope Clinic']);
+
+      const first = await api.get('/api/organization-directory?limit=2&page=1');
+      const second = await api.get('/api/organization-directory?limit=2&page=2');
+      expect(first.body).toMatchObject({ total: 3, totalPages: 2, limit: 2 });
+      expect(names(first)).toHaveLength(2);
+      expect(names(second)).toHaveLength(1);
+      const past = await api.get('/api/organization-directory?limit=2&page=9');
+      expect(past.body).toMatchObject({ items: [], total: 3 });
+
+      expect((await api.get('/api/organization-directory?limit=1000')).status).toBe(400);
+      expect((await api.get('/api/organization-directory?type=bogus')).status).toBe(400);
+      expect((await api.get('/api/organization-directory/states')).body).toEqual(['Lagos', 'Ogun']);
+      expect((await request(app).get('/api/organization-directory')).status).toBe(401);
+    });
+
+    it('adding the same entries twice adds nothing', async () => {
+      expect(await addDirectoryEntries(db, [entries[2]!])).toBe(1);
+      expect(await addDirectoryEntries(db, [entries[2]!])).toBe(0);
+    });
+
+    it('links an organisation to an entry from the list, and only an organisation', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      await addDirectoryEntries(db, [entries[0]!]);
+      const [entry] = (await api.get('/api/organization-directory?q=grace')).body.items;
+      const org = await api.post('/api/beneficiaries', {
+        kind: 'institution',
+        name: entry.name,
+        institutionType: entry.institutionType,
+        directoryId: entry.id,
+      });
+      expect(org.status).toBe(201);
+      expect(org.body.directoryId).toBe(entry.id);
+      const manual = await api.post('/api/beneficiaries', {
+        kind: 'institution',
+        name: 'Home Fellowship',
+        institutionType: 'church',
+      });
+      expect(manual.body.directoryId).toBeNull();
+      const person = await api.post('/api/beneficiaries', {
+        name: 'Ada',
+        relationship: 'daughter',
+        directoryId: entry.id,
+      });
+      expect(person.status).toBe(400);
+      const missing = await api.post('/api/beneficiaries', {
+        kind: 'institution',
+        name: 'Nowhere',
+        institutionType: 'church',
+        directoryId: '00000000-0000-4000-8000-000000000000',
+      });
+      expect(missing.status).toBe(422);
+    });
+  });
+
   describe('executors', () => {
+    it('accepts a priest and rejects an unknown kind', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      const priest = await api.post('/api/executors', {
+        kind: 'priest',
+        name: 'Fr Emmanuel Ogbolu',
+      });
+      expect(priest.status).toBe(201);
+      expect(priest.body.kind).toBe('priest');
+      expect((await api.post('/api/executors', { kind: 'bishop', name: 'x' })).status).toBe(400);
+    });
+
     it('creates, updates, lists and deletes, privately', async () => {
       const alice = as((await registerTestUser(app)).bearer);
       const bob = as((await registerTestUser(app)).bearer);

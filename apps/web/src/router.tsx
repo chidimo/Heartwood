@@ -7,16 +7,13 @@ import {
   Outlet,
 } from '@tanstack/react-router';
 import { AppLayout } from './components/layout';
-import { AssetDetailsPage } from './pages/asset-details';
 import { AssetEditPage } from './pages/asset-edit';
-import { AssetNewPage } from './pages/asset-new';
 import { AssetViewPage } from './pages/asset-view';
+import { BeneficiariesPage } from './pages/beneficiaries';
 import { AssetsPage } from './pages/assets';
-import { ExecutorFormPage } from './pages/executor-form';
 import { ExecutorsPage } from './pages/executors';
 import { LoginPage } from './pages/login';
-import { PeoplePage } from './pages/people';
-import { PersonFormPage } from './pages/person-form';
+import { OrganizationsPage } from './pages/organizations';
 import { RegisterPage } from './pages/register';
 import { ResiduaryPage } from './pages/residuary';
 import { ReviewPage } from './pages/review';
@@ -54,16 +51,11 @@ export const createAppRouter = (history?: RouterHistory) =>
       registerRoute,
       appRoute.addChildren([
         route('/assets', AssetsPage),
-        route('/assets/new', AssetNewPage),
         route('/assets/$id', AssetViewPage),
         route('/assets/$id/edit', AssetEditPage),
-        route('/assets/$id/details', AssetDetailsPage),
-        route('/people', PeoplePage),
-        route('/people/new', PersonFormPage),
-        route('/people/$id', PersonFormPage),
+        route('/beneficiaries', BeneficiariesPage),
+        route('/organizations', OrganizationsPage),
         route('/executors', ExecutorsPage),
-        route('/executors/new', ExecutorFormPage),
-        route('/executors/$id', ExecutorFormPage),
         route('/residuary', ResiduaryPage),
         route('/review', ReviewPage),
       ]),

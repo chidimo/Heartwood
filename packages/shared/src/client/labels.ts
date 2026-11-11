@@ -143,6 +143,7 @@ export const IF_UNMET_OPTIONS = [
 export const EXECUTOR_KIND_OPTIONS = [
   { value: 'executor', label: 'Executor' },
   { value: 'lawyer', label: 'Lawyer' },
+  { value: 'priest', label: 'Priest' },
 ] as const;
 
 const ifUnmetSentence = (plan: IfUnmetPlan, fallbackName: string): string => {

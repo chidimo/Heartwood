@@ -7,6 +7,7 @@ const person = (id: string, name: string): BeneficiaryDto => ({
   kind: 'person',
   name,
   institutionType: null,
+  directoryId: null,
   relationship: 'son',
   relationshipOther: null,
   contact: null,
@@ -26,6 +27,7 @@ const church: BeneficiaryDto = {
   relationship: null,
   relationshipOther: null,
   institutionType: 'church',
+  directoryId: null,
 };
 
 describe('SharesEditor', () => {

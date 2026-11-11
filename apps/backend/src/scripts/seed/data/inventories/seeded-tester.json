@@ -211,7 +211,7 @@
     },
     {
       "kind": "institution",
-      "name": "Covenant Hills University",
+      "name": "Covenant University",
       "institutionType": "university",
       "address": "Ota, Ogun State"
     },
@@ -294,6 +294,13 @@
       "name": "Ugochukwu Obi",
       "relationship": "nephew",
       "dateOfBirth": "2001-08-12"
+    },
+    {
+      "kind": "institution",
+      "name": "Nigerian Red Cross Society",
+      "institutionType": "charity",
+      "address": "Abuja",
+      "contingencyPlan": "redistribute"
     }
   ],
   "executors": [
@@ -313,8 +320,8 @@
       "contact": "funke@balogun-chambers.example"
     },
     {
-      "kind": "executor",
-      "name": "Father Emmanuel Ogbolue",
+      "kind": "priest",
+      "name": "Fr Emmanuel Ogbolu",
       "contact": "0809 000 0004"
     },
     {
@@ -404,7 +411,7 @@
           "condition": {
             "kind": "min_age",
             "ifUnmet": "named_beneficiary",
-            "holder": "Father Emmanuel Ogbolue",
+            "holder": "Fr Emmanuel Ogbolu",
             "minAge": 18,
             "fallbackBeneficiary": "Kelechi Obi"
           }
@@ -446,11 +453,11 @@
       "entries": [
         {
           "beneficiary": "Hope Home Orphanage",
-          "sharePercent": 25
+          "sharePercent": 20
         },
         {
           "beneficiary": "Unilag Scholarship Fund",
-          "sharePercent": 25
+          "sharePercent": 20
         },
         {
           "beneficiary": "Lagos Heart Foundation",
@@ -458,10 +465,14 @@
         },
         {
           "beneficiary": "Sunshine Primary School",
-          "sharePercent": 15
+          "sharePercent": 10
         },
         {
           "beneficiary": "Island General Hospital",
+          "sharePercent": 15
+        },
+        {
+          "beneficiary": "Nigerian Red Cross Society",
           "sharePercent": 15
         }
       ]
@@ -551,7 +562,7 @@
       "asset": "Pound account in the UK",
       "entries": [
         {
-          "beneficiary": "Covenant Hills University",
+          "beneficiary": "Covenant University",
           "sharePercent": 50
         },
         {

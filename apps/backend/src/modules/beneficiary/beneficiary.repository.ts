@@ -27,6 +27,7 @@ export const insertBeneficiary = (
     relationship: string | null;
     relationship_other: string | null;
     institution_type: string | null;
+    directory_id: string | null;
     contact: string | null;
     address: string | null;
     date_of_birth: string | null;
@@ -44,6 +45,7 @@ export const updateBeneficiary = (
     relationship: string | null;
     relationship_other: string | null;
     institution_type: string;
+    directory_id: string | null;
     contact: string | null;
     address: string | null;
     date_of_birth: string | null;

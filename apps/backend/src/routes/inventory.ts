@@ -5,6 +5,7 @@ import {
   assetUpdateSchema,
   beneficiaryInputSchema,
   beneficiaryUpdateSchema,
+  directorySearchSchema,
   executorInputSchema,
   executorUpdateSchema,
   replaceAllocationsSchema,
@@ -39,6 +40,10 @@ import {
   replaceAssetAllocations,
   replaceResiduary,
 } from '../modules/inventory/inventory.service';
+import {
+  listOrganizationStates,
+  searchOrganizations,
+} from '../modules/organization-directory/organization-directory.service';
 import { idParam } from '../utils/params';
 import { created, noContent, ok } from '../utils/response';
 
@@ -158,6 +163,13 @@ export function createInventoryRoutes(db: DbClient, authSecret: string) {
     await deleteExecutor(db, requireAccountId(req), idParam(req));
     noContent(res);
   });
+
+  router.get('/organization-directory', async (req, res) =>
+    ok(res, await searchOrganizations(db, parseBody(directorySearchSchema, req.query)))
+  );
+  router.get('/organization-directory/states', async (_req, res) =>
+    ok(res, await listOrganizationStates(db))
+  );
 
   router.get('/inventory/report', async (req, res) =>
     ok(res, await getInventoryReport(db, requireAccountId(req)))

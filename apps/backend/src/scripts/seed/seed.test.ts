@@ -25,9 +25,9 @@ describe('dev seed', () => {
     ]);
     expect(await count('account')).toBe(2);
     expect(await count('asset')).toBe(17); // 16 + 1
-    expect(await count('beneficiary')).toBe(35); // 34 + 1
+    expect(await count('beneficiary')).toBe(36); // 35 + 1
     expect(await count('executor')).toBe(5);
-    expect(await count('allocation')).toBe(35 + 1); // seeded entries + other's account
+    expect(await count('allocation')).toBe(36 + 1); // seeded entries + other's account
   });
 
   it('seeds a relationship that is not on the list, with its own words', async () => {
@@ -89,7 +89,7 @@ describe('dev seed', () => {
     expect(again.every(r => !r.created && !r.seededInventory)).toBe(true);
     expect(await count('account')).toBe(2);
     expect(await count('asset')).toBe(17);
-    expect(await count('beneficiary')).toBe(35);
+    expect(await count('beneficiary')).toBe(36);
     expect(lines.join('\n')).toMatch(/already has data/);
   });
 

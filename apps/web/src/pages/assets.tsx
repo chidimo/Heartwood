@@ -1,21 +1,24 @@
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import { ASSET_TYPE_LABELS, formatValue } from '@heartwood/shared';
+import { getErrorMessage } from '../api/client';
+import { AssetForm } from '../components/asset-form';
+import { Button } from '../components/button';
 import { Heading } from '../components/layout';
+import { Modal } from '../components/modal';
 import { QueryState } from '../components/query-state';
-import { useAssets } from '../features/api';
+import { useAssets, useCreateAsset } from '../features/api';
 
 export const AssetsPage = () => {
   const assets = useAssets();
+  const createAsset = useCreateAsset();
+  const [isAdding, setIsAdding] = useState(false);
   return (
     <>
       <div className="flex items-center justify-between">
         <Heading>Assets</Heading>
-        <Link
-          to="/assets/new"
-          className="flex h-11 items-center rounded-xl bg-primary-600 px-5 font-semibold text-white hover:bg-primary-700"
-        >
-          Add an asset
-        </Link>
+        <Button onClick={() => setIsAdding(true)}>Add an asset</Button>
       </div>
       <QueryState
         query={assets}
@@ -51,6 +54,23 @@ export const AssetsPage = () => {
           </ul>
         )}
       </QueryState>
+      {isAdding && (
+        <Modal title="Add an asset" onClose={() => setIsAdding(false)}>
+          <AssetForm
+            submitLabel="Save asset"
+            isPending={createAsset.isPending}
+            onSubmit={input =>
+              createAsset.mutate(input, {
+                onSuccess: () => {
+                  toast.success('Asset saved');
+                  setIsAdding(false);
+                },
+                onError: error => toast.error(getErrorMessage(error, "Couldn't save. Try again.")),
+              })
+            }
+          />
+        </Modal>
+      )}
     </>
   );
 };
