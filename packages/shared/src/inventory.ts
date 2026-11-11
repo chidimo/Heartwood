@@ -431,9 +431,26 @@ export interface InventoryIssue {
   message: string;
 }
 
+export const REPORT_MAX_PAGE_SIZE = 100;
+export const REPORT_DEFAULT_PAGE_SIZE = 20;
+
+// Query-string values arrive as text, so numbers are coerced. The server clamps the page size again.
+export const reportQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(10000).default(1),
+  limit: z.coerce.number().int().min(1).max(REPORT_MAX_PAGE_SIZE).default(REPORT_DEFAULT_PAGE_SIZE),
+});
+export type ReportQuery = z.infer<typeof reportQuerySchema>;
+
 export interface InventoryReport {
   /** True when there are no errors (warnings and info don't block a draft will). */
   ok: boolean;
+  /** How many issues of each severity there are in all, not only on this page. */
+  counts: Record<IssueSeverity, number>;
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  /** One page of the issues, most serious first. */
   issues: InventoryIssue[];
 }
 

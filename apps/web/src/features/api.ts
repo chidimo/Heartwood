@@ -59,8 +59,13 @@ export const useAllocations = (assetId: string) =>
   });
 export const useResiduary = () =>
   useQuery({ queryKey: ['residuary'], queryFn: () => apiFetch<ResiduaryEntry[]>('/residuary') });
-export const useReport = () =>
-  useQuery({ queryKey: ['report'], queryFn: () => apiFetch<InventoryReport>('/inventory/report') });
+/** One page of the review: the verdict and totals are the same on every page. */
+export const useReport = (page: number, limit: number) =>
+  useQuery({
+    queryKey: ['report', page, limit],
+    queryFn: () => apiFetch<InventoryReport>(`/inventory/report?page=${page}&limit=${limit}`),
+    placeholderData: keepPreviousData,
+  });
 
 const useRefreshAfterWrite = () => {
   const queryClient = useQueryClient();

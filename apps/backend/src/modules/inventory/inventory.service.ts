@@ -90,9 +90,14 @@ export const replaceResiduary = (db: DbClient, ownerId: string, entries: Residua
   });
 
 /** What still needs attention before the inventory can become a draft will. */
+const SEVERITY_RANK: Record<InventoryIssue['severity'], number> = { error: 0, warning: 1, info: 2 };
+const MAX_PAGE_SIZE = 100;
+
+/** The review of an inventory: every check runs, then one page of the issues is returned, worst first. */
 export const getInventoryReport = async (
   db: DbClient,
-  ownerId: string
+  ownerId: string,
+  paging: { page: number; limit: number } = { page: 1, limit: 20 }
 ): Promise<InventoryReport> => {
   const [assets, beneficiaries, coverage] = await Promise.all([
     listAssets(db, ownerId),
@@ -190,5 +195,18 @@ export const getInventoryReport = async (
     }
   }
 
-  return { ok: !issues.some(i => i.severity === 'error'), issues };
+  // Array.sort is stable, so issues of one severity keep the order they were found in.
+  issues.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
+  const limit = Math.min(paging.limit, MAX_PAGE_SIZE);
+  const counts = { error: 0, warning: 0, info: 0 };
+  for (const issue of issues) counts[issue.severity] += 1;
+  return {
+    ok: counts.error === 0,
+    counts,
+    total: issues.length,
+    page: paging.page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(issues.length / limit)),
+    issues: issues.slice((paging.page - 1) * limit, paging.page * limit),
+  };
 };

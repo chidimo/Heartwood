@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
   SEVERITY_LABELS,
@@ -6,9 +7,12 @@ import {
   type InventoryReport,
 } from '@heartwood/shared';
 import { Heading } from '../components/layout';
+import { Pagination } from '../components/pagination';
 import { QueryState } from '../components/query-state';
 import { useReport } from '../features/api';
 import { cn } from '../lib/cn';
+
+const PAGE_SIZE = 5;
 
 const SEVERITY_STYLES: Record<InventoryIssue['severity'], string> = {
   error: 'border-danger/50',
@@ -18,7 +22,7 @@ const SEVERITY_STYLES: Record<InventoryIssue['severity'], string> = {
 
 const verdictDetail = (report: InventoryReport): string => {
   if (!report.ok) return 'Fix the items below, then check again.';
-  if (report.issues.length === 0) return 'Nothing needs your attention.';
+  if (report.total === 0) return 'Nothing needs your attention.';
   return 'Nothing blocks a draft. A few things are worth a look.';
 };
 
@@ -56,7 +60,13 @@ const IssueRow = ({ issue }: { issue: InventoryIssue }) => {
   );
 };
 
-const ReportBody = ({ report }: { report: InventoryReport }) => (
+const ReportBody = ({
+  report,
+  onPageChange,
+}: {
+  report: InventoryReport;
+  onPageChange: (page: number) => void;
+}) => (
   <div className="flex flex-col gap-5">
     <div>
       <p className={cn('text-xl font-semibold', report.ok ? 'text-success' : 'text-danger')}>
@@ -78,15 +88,23 @@ const ReportBody = ({ report }: { report: InventoryReport }) => (
         </section>
       );
     })}
+    <Pagination page={report.page} totalPages={report.totalPages} onPageChange={onPageChange} />
   </div>
 );
 
 export const ReviewPage = () => {
-  const report = useReport();
+  const [page, setPage] = useState(1);
+  const report = useReport(page, PAGE_SIZE);
+  const handlePageChange = (next: number) => {
+    setPage(next);
+    window.scrollTo({ top: 0 });
+  };
   return (
     <>
       <Heading>Review</Heading>
-      <QueryState query={report}>{data => <ReportBody report={data} />}</QueryState>
+      <QueryState query={report}>
+        {data => <ReportBody report={data} onPageChange={handlePageChange} />}
+      </QueryState>
       <section className="flex flex-col gap-1">
         <h2 className="text-lg font-semibold">Everything else</h2>
         <p className="text-ink/70 dark:text-white/70">

@@ -91,11 +91,31 @@ export const useResiduary = () =>
     queryFn: () => apiFetch<ResiduaryEntry[]>('/residuary'),
   });
 
-export const useReport = () =>
-  useQuery({
+const REPORT_PAGE_SIZE = 20;
+
+/** The review, a page of issues at a time: `fetchNextPage` appends the next page (infinite scroll). */
+export const useReport = () => {
+  const query = useInfiniteQuery({
     queryKey: inventoryKeys.report,
-    queryFn: () => apiFetch<InventoryReport>('/inventory/report'),
+    queryFn: ({ pageParam }) =>
+      apiFetch<InventoryReport>(`/inventory/report?page=${pageParam}&limit=${REPORT_PAGE_SIZE}`),
+    initialPageParam: 1,
+    getNextPageParam: last => (last.page < last.totalPages ? last.page + 1 : undefined),
   });
+  const first = query.data?.pages[0];
+  return {
+    // The verdict and totals are the same on every page, so the first one speaks for all.
+    summary: first ? { ok: first.ok, total: first.total, counts: first.counts } : null,
+    issues: query.data?.pages.flatMap(page => page.issues) ?? [],
+    isPending: query.isPending,
+    error: query.error,
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+    isRefetching: query.isRefetching,
+    fetchNextPage: () => void query.fetchNextPage(),
+    refetch: () => void query.refetch(),
+  };
+};
 
 const useRefreshAfterWrite = () => {
   const queryClient = useQueryClient();

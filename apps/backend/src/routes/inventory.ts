@@ -9,6 +9,7 @@ import {
   executorInputSchema,
   executorUpdateSchema,
   replaceAllocationsSchema,
+  reportQuerySchema,
   replaceResiduarySchema,
 } from '@heartwood/shared';
 import { createAuthenticate, requireAccountId } from '../middleware/authenticate';
@@ -172,7 +173,10 @@ export function createInventoryRoutes(db: DbClient, authSecret: string) {
   );
 
   router.get('/inventory/report', async (req, res) =>
-    ok(res, await getInventoryReport(db, requireAccountId(req)))
+    ok(
+      res,
+      await getInventoryReport(db, requireAccountId(req), parseBody(reportQuerySchema, req.query))
+    )
   );
 
   return router;

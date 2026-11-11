@@ -1249,7 +1249,38 @@ describe('inventory', () => {
   describe('inventory report', () => {
     it('is ok and empty for a new user', async () => {
       const api = as((await registerTestUser(app)).bearer);
-      expect((await api.get('/api/inventory/report')).body).toEqual({ ok: true, issues: [] });
+      expect((await api.get('/api/inventory/report')).body).toEqual({
+        ok: true,
+        counts: { error: 0, warning: 0, info: 0 },
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+        issues: [],
+      });
+    });
+
+    it('pages the issues, worst first, and counts them all', async () => {
+      const api = as((await registerTestUser(app)).bearer);
+      for (const description of ['A', 'B', 'C']) {
+        await api.post('/api/assets', { type: 'cash', description });
+      }
+      // Three uncovered assets are three errors, plus "add a beneficiary" is a fourth.
+      await api.post('/api/beneficiaries', { name: 'Ada', relationship: 'daughter' });
+      const first = await api.get('/api/inventory/report?limit=2&page=1');
+      const second = await api.get('/api/inventory/report?limit=2&page=2');
+      expect(first.body).toMatchObject({ ok: false, total: 5, page: 1, limit: 2, totalPages: 3 });
+      expect(first.body.issues).toHaveLength(2);
+      expect(second.body.page).toBe(2);
+      expect(second.body.issues).toHaveLength(2);
+      expect(first.body.counts.error).toBe(3);
+      const severities = [...first.body.issues, ...second.body.issues].map(
+        (i: { severity: string }) => i.severity
+      );
+      expect(severities).toEqual(
+        [...severities].sort((a, b) => 'ewi'.indexOf(a[0]!) - 'ewi'.indexOf(b[0]!))
+      );
+      expect((await api.get('/api/inventory/report?limit=1000')).status).toBe(400);
     });
 
     it('errors on an asset nothing covers, and downgrades it to info once a residuary exists', async () => {
@@ -1317,7 +1348,11 @@ describe('inventory', () => {
       const bob = as((await registerTestUser(app)).bearer);
       await newAsset(alice);
       await newBeneficiary(alice);
-      expect((await bob.get('/api/inventory/report')).body).toEqual({ ok: true, issues: [] });
+      expect((await bob.get('/api/inventory/report')).body).toMatchObject({
+        ok: true,
+        total: 0,
+        issues: [],
+      });
     });
   });
 });
