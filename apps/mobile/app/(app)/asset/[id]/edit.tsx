@@ -23,7 +23,7 @@ import { Segmented } from '../../../../src/components/segmented';
 import { Select } from '../../../../src/components/select';
 import { SharesEditor } from '../../../../src/components/shares-editor';
 import { TextField } from '../../../../src/components/text-field';
-import { useAssets } from '../../../../src/features/assets/api';
+import { useAsset } from '../../../../src/features/assets/api';
 import {
   useAllocations,
   useBeneficiaries,
@@ -211,16 +211,8 @@ const Gone = () => (
 
 const AssetEditScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const assets = useAssets();
-
-  return (
-    <QueryState query={assets}>
-      {list => {
-        const asset = list.find(a => a.id === id);
-        if (!asset) return <Gone />;
-        return <AssetEditBody asset={asset} />;
-      }}
-    </QueryState>
-  );
+  const asset = useAsset(id);
+  if (asset.isError) return <Gone />;
+  return <QueryState query={asset}>{found => <AssetEditBody asset={found} />}</QueryState>;
 };
 export default AssetEditScreen;

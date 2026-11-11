@@ -1,10 +1,34 @@
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ASSET_TYPE_LABELS, type AssetDto, formatValue } from '@heartwood/shared';
-import { useAuth } from '../../../src/auth/auth-context';
+import {
+  ASSET_TYPE_LABELS,
+  ASSET_TYPES,
+  CURRENCIES,
+  CURRENCY_LABELS,
+  formatValue,
+  type AssetDto,
+  type AssetType,
+  type Currency,
+} from '@heartwood/shared';
+import { errorMessage } from '../../../src/api/client';
 import { Button } from '../../../src/components/button';
-import { QueryState } from '../../../src/components/query-state';
+import { ListFooter } from '../../../src/components/list-footer';
+import { Select } from '../../../src/components/select';
+import { TextField } from '../../../src/components/text-field';
 import { useAssets } from '../../../src/features/assets/api';
+import { useDebouncedValue } from '../../../src/utils/use-debounced-value';
+
+const ALL = 'all';
+
+const TYPE_FILTER = [
+  { value: ALL, label: 'All types' },
+  ...ASSET_TYPES.map(value => ({ value: value as string, label: ASSET_TYPE_LABELS[value] })),
+];
+const CURRENCY_FILTER = [
+  { value: ALL, label: 'All currencies' },
+  ...CURRENCIES.map(value => ({ value: value as string, label: CURRENCY_LABELS[value] })),
+];
 
 const AssetRow = ({ asset, onPress }: { asset: AssetDto; onPress: () => void }) => (
   <Pressable
@@ -27,41 +51,91 @@ const AssetRow = ({ asset, onPress }: { asset: AssetDto; onPress: () => void }) 
 
 const AssetsScreen = () => {
   const router = useRouter();
-  const { account, signOut } = useAuth();
-  const assets = useAssets();
+  const [search, setSearch] = useState('');
+  const [type, setType] = useState(ALL);
+  const [currency, setCurrency] = useState(ALL);
 
-  const handleAdd = () => router.push('/add-asset');
+  const assets = useAssets({
+    q: useDebouncedValue(search),
+    type: type === ALL ? undefined : (type as AssetType),
+    currency: currency === ALL ? undefined : (currency as Currency),
+  });
+  const isFiltered = search.trim() !== '' || type !== ALL || currency !== ALL;
+
+  const handleClear = () => {
+    setSearch('');
+    setType(ALL);
+    setCurrency(ALL);
+  };
+
+  const emptyText = () => {
+    if (assets.isPending) return 'Loading…';
+    if (assets.error) return errorMessage(assets.error);
+    if (isFiltered) return 'No assets match. Clear the search or the filters.';
+    return 'Nothing listed yet. Add the first thing you own.';
+  };
 
   return (
     <View className="flex-1 bg-white dark:bg-ink">
       <View className="flex-1 gap-4 p-6">
-        <Text className="text-ink/70 dark:text-white/70">Signed in as {account?.name}</Text>
-        <QueryState
-          query={assets}
-          isEmpty={list => list.length === 0}
-          empty={
-            <Text className="py-8 text-center text-ink/60 dark:text-white/60">
-              Nothing listed yet. Add the first thing you own.
-            </Text>
-          }
-        >
-          {list => (
-            <FlatList
-              data={list}
-              keyExtractor={item => item.id}
-              renderItem={({ item }) => (
-                <AssetRow asset={item} onPress={() => router.push(`/asset/${item.id}`)} />
-              )}
-              ItemSeparatorComponent={() => <View className="h-3" />}
+        <TextField
+          label="Search"
+          value={search}
+          onChangeText={setSearch}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Select label="Type" value={type} options={TYPE_FILTER} onChange={setType} />
+          </View>
+          <View className="flex-1">
+            <Select
+              label="Currency"
+              value={currency}
+              options={CURRENCY_FILTER}
+              onChange={setCurrency}
             />
+          </View>
+        </View>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-sm text-ink/60 dark:text-white/60">
+            {assets.total} {assets.total === 1 ? 'asset' : 'assets'}
+          </Text>
+          {isFiltered && (
+            <Pressable onPress={handleClear} accessibilityRole="button">
+              <Text className="text-sm text-primary-600 dark:text-primary-200">
+                Clear search and filters
+              </Text>
+            </Pressable>
           )}
-        </QueryState>
+        </View>
+        <FlatList
+          data={assets.items}
+          keyExtractor={item => item.id}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => (
+            <AssetRow asset={item} onPress={() => router.push(`/asset/${item.id}`)} />
+          )}
+          ItemSeparatorComponent={() => <View className="h-3" />}
+          onEndReached={() => {
+            if (assets.hasNextPage && !assets.isFetchingNextPage) assets.fetchNextPage();
+          }}
+          onEndReachedThreshold={0.5}
+          refreshControl={
+            <RefreshControl
+              refreshing={assets.isRefetching && !assets.isFetchingNextPage}
+              onRefresh={assets.refetch}
+            />
+          }
+          ListEmptyComponent={
+            <Text className="py-8 text-center text-ink/60 dark:text-white/60">{emptyText()}</Text>
+          }
+          ListFooterComponent={<ListFooter isFetchingNextPage={assets.isFetchingNextPage} />}
+        />
       </View>
-      <View className="gap-3 px-6 pb-6">
-        <Button label="Add an asset" onPress={handleAdd} testID="add-asset" />
-        <Pressable onPress={() => void signOut()} accessibilityRole="button">
-          <Text className="text-center text-primary-600 dark:text-primary-200">Sign out</Text>
-        </Pressable>
+      <View className="px-6 pb-6">
+        <Button label="Add an asset" onPress={() => router.push('/add-asset')} testID="add-asset" />
       </View>
     </View>
   );

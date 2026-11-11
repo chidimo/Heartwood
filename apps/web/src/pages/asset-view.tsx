@@ -11,7 +11,7 @@ import { Modal } from '../components/modal';
 import { QueryState } from '../components/query-state';
 import {
   useAllocations,
-  useAssets,
+  useAsset,
   useBeneficiaries,
   useDeleteAsset,
   useExecutors,
@@ -121,14 +121,7 @@ const AssetView = ({ asset }: { asset: AssetDto }) => {
 
 export const AssetViewPage = () => {
   const { id } = useParams({ strict: false }) as { id: string };
-  const assets = useAssets();
-  return (
-    <QueryState query={assets}>
-      {list => {
-        const asset = list.find(a => a.id === id);
-        if (!asset) return <p>This asset is no longer on your list.</p>;
-        return <AssetView asset={asset} />;
-      }}
-    </QueryState>
-  );
+  const asset = useAsset(id);
+  if (asset.isError) return <p>This asset is no longer on your list.</p>;
+  return <QueryState query={asset}>{found => <AssetView asset={found} />}</QueryState>;
 };

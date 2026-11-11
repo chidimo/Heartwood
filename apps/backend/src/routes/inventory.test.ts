@@ -67,7 +67,7 @@ describe('inventory', () => {
       );
       const updated = await api.patch(`/api/assets/${id}`, { roughValue: null, notes: 'Updated' });
       expect(updated.body).toMatchObject({ roughValue: null, notes: 'Updated' });
-      expect((await api.get('/api/assets')).body).toHaveLength(1);
+      expect((await api.get('/api/assets')).body.items).toHaveLength(1);
     });
 
     it('defaults to naira, stores a chosen currency and decimals, and rejects an unknown one', async () => {
@@ -89,6 +89,76 @@ describe('inventory', () => {
         currency: 'XYZ',
       });
       expect(bad.status).toBe(400);
+    });
+
+    describe('searching and paging the list', () => {
+      const seed = async (api: ReturnType<typeof as>) => {
+        const make = (body: Record<string, unknown>) => api.post('/api/assets', body);
+        await make({
+          type: 'property',
+          description: '3-bedroom flat, Surulere',
+          institution: 'Lagos Land Registry',
+        });
+        await make({ type: 'vehicle', description: 'Toyota Camry 2014' });
+        await make({ type: 'cash', description: 'Savings account', institution: 'GTBank' });
+        await make({
+          type: 'cash',
+          description: 'Dollar account',
+          institution: 'Zenith Bank',
+          currency: 'USD',
+        });
+        await make({ type: 'business_shares', description: 'Shares in the family business' });
+      };
+      const names = (r: { body: { items: { description: string }[] } }) =>
+        r.body.items.map(i => i.description);
+
+      it('pages the list and counts every match, in the same order each time', async () => {
+        const api = as((await registerTestUser(app)).bearer);
+        await seed(api);
+        const first = await api.get('/api/assets?limit=2&page=1');
+        const second = await api.get('/api/assets?limit=2&page=2');
+        const third = await api.get('/api/assets?limit=2&page=3');
+        expect(first.body).toMatchObject({ page: 1, limit: 2, total: 5, totalPages: 3 });
+        expect(names(first)).toEqual(['3-bedroom flat, Surulere', 'Toyota Camry 2014']);
+        expect(names(second)).toEqual(['Savings account', 'Dollar account']);
+        expect(names(third)).toEqual(['Shares in the family business']);
+        const past = await api.get('/api/assets?limit=2&page=9');
+        expect(past.body).toMatchObject({ items: [], total: 5, totalPages: 3 });
+      });
+
+      it('filters by type and by currency, and combines them', async () => {
+        const api = as((await registerTestUser(app)).bearer);
+        await seed(api);
+        expect(names(await api.get('/api/assets?type=cash'))).toEqual([
+          'Savings account',
+          'Dollar account',
+        ]);
+        expect(names(await api.get('/api/assets?currency=USD'))).toEqual(['Dollar account']);
+        expect(names(await api.get('/api/assets?type=cash&currency=NGN'))).toEqual([
+          'Savings account',
+        ]);
+        expect((await api.get('/api/assets?type=cash')).body.total).toBe(2);
+      });
+
+      it('searches the description and where it is held, forgiving a typo, best match first', async () => {
+        const api = as((await registerTestUser(app)).bearer);
+        await seed(api);
+        expect(names(await api.get('/api/assets?q=camry'))).toContain('Toyota Camry 2014');
+        expect(names(await api.get('/api/assets?q=zenith'))).toEqual(['Dollar account']);
+        expect(names(await api.get('/api/assets?q=Surulre'))).toContain('3-bedroom flat, Surulere');
+        const both = await api.get('/api/assets?q=account&type=cash');
+        expect(names(both).sort()).toEqual(['Dollar account', 'Savings account']);
+        expect((await api.get('/api/assets?q=%25')).body.items).toEqual([]);
+      });
+
+      it("never shows another person's assets, and rejects a page size over 100", async () => {
+        const alice = as((await registerTestUser(app)).bearer);
+        const bob = as((await registerTestUser(app)).bearer);
+        await seed(alice);
+        expect((await bob.get('/api/assets?q=camry')).body).toMatchObject({ items: [], total: 0 });
+        expect((await alice.get('/api/assets?limit=1000')).status).toBe(400);
+        expect((await alice.get('/api/assets?type=boat')).status).toBe(400);
+      });
     });
 
     it('rejects an unknown type, an empty description and a negative value', async () => {
@@ -129,7 +199,7 @@ describe('inventory', () => {
       expect((await bob.get(`/api/assets/${asset.id}`)).status).toBe(404);
       expect((await bob.patch(`/api/assets/${asset.id}`, { notes: 'hacked' })).status).toBe(404);
       expect((await bob.del(`/api/assets/${asset.id}`)).status).toBe(404);
-      expect((await bob.get('/api/assets')).body).toEqual([]);
+      expect((await bob.get('/api/assets')).body.items).toEqual([]);
       expect((await alice.get(`/api/assets/${asset.id}`)).body.notes).toBeNull();
     });
 

@@ -1,4 +1,4 @@
-import type { ClassNamesConfig, GroupBase } from 'react-select';
+import type { ClassNamesConfig, GroupBase, StylesConfig } from 'react-select';
 import { cn } from '../lib/cn';
 
 /** Tailwind classes for react-select (used with `unstyled`), shared by every dropdown. */
@@ -20,4 +20,13 @@ export const selectClassNames = <T>(): ClassNamesConfig<T, false, GroupBase<T>> 
     ),
   noOptionsMessage: () => 'px-3 py-2 text-sm text-ink/60 dark:text-white/60',
   loadingMessage: () => 'px-3 py-2 text-sm text-ink/60 dark:text-white/60',
+});
+
+/**
+ * react-select writes its own `z-index: 1` on the menu as plain CSS, which beats a Tailwind class, so the
+ * menu is raised here. Without it a sticky table header (also z-index 1, and later on the page) paints over
+ * the options.
+ */
+export const selectStyles = <T>(): StylesConfig<T, false, GroupBase<T>> => ({
+  menu: base => ({ ...base, zIndex: 50 }),
 });

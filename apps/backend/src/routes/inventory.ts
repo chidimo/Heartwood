@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { DbClient } from '@heartwood/database';
 import {
   assetInputSchema,
+  assetSearchSchema,
   assetUpdateSchema,
   beneficiaryInputSchema,
   beneficiaryUpdateSchema,
@@ -25,7 +26,7 @@ import {
   createAsset,
   deleteAsset,
   getAsset,
-  listAssets,
+  searchAssets,
   updateAsset,
 } from '../modules/asset/asset.service';
 import {
@@ -62,7 +63,9 @@ export function createInventoryRoutes(db: DbClient, authSecret: string) {
   const router = Router();
   router.use(createAuthenticate(authSecret));
 
-  router.get('/assets', async (req, res) => ok(res, await listAssets(db, requireAccountId(req))));
+  router.get('/assets', async (req, res) =>
+    ok(res, await searchAssets(db, requireAccountId(req), parseBody(assetSearchSchema, req.query)))
+  );
   router.post('/assets', async (req, res) =>
     created(
       res,

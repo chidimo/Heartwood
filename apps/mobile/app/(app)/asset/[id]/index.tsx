@@ -6,7 +6,7 @@ import { Button } from '../../../../src/components/button';
 import { Distribution } from '../../../../src/components/distribution';
 import { QueryState } from '../../../../src/components/query-state';
 import { Screen } from '../../../../src/components/screen';
-import { useAssets } from '../../../../src/features/assets/api';
+import { useAsset } from '../../../../src/features/assets/api';
 import {
   useAllocations,
   useBeneficiaries,
@@ -110,16 +110,8 @@ const Gone = () => (
 
 const AssetScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const assets = useAssets();
-
-  return (
-    <QueryState query={assets}>
-      {list => {
-        const asset = list.find(a => a.id === id);
-        if (!asset) return <Gone />;
-        return <AssetView asset={asset} />;
-      }}
-    </QueryState>
-  );
+  const asset = useAsset(id);
+  if (asset.isError) return <Gone />;
+  return <QueryState query={asset}>{found => <AssetView asset={found} />}</QueryState>;
 };
 export default AssetScreen;

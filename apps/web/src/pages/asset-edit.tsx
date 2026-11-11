@@ -24,7 +24,7 @@ import { SharesEditor } from '../components/shares-editor';
 import { TextField } from '../components/text-field';
 import {
   useAllocations,
-  useAssets,
+  useAsset,
   useBeneficiaries,
   useExecutors,
   useReplaceAllocations,
@@ -174,24 +174,21 @@ const EditorLoader = ({
 
 export const AssetEditPage = () => {
   const { id } = useParams({ strict: false }) as { id: string };
-  const assets = useAssets();
+  const found = useAsset(id);
   const beneficiaries = useBeneficiaries();
+  if (found.isError) return <p>This asset is no longer on your list.</p>;
 
   return (
-    <QueryState query={assets}>
-      {list => {
-        const asset = list.find(a => a.id === id);
-        if (!asset) return <p>This asset is no longer on your list.</p>;
-        return (
-          <>
-            <Heading>Edit distribution</Heading>
-            <p className="text-ink/70 dark:text-white/70">{asset.description}</p>
-            <QueryState query={beneficiaries}>
-              {people => <EditorLoader asset={asset} beneficiaries={people} />}
-            </QueryState>
-          </>
-        );
-      }}
+    <QueryState query={found}>
+      {asset => (
+        <>
+          <Heading>Edit distribution</Heading>
+          <p className="text-ink/70 dark:text-white/70">{asset.description}</p>
+          <QueryState query={beneficiaries}>
+            {people => <EditorLoader asset={asset} beneficiaries={people} />}
+          </QueryState>
+        </>
+      )}
     </QueryState>
   );
 };

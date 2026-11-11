@@ -56,6 +56,9 @@ describe('sign in', () => {
         if (url.endsWith('/auth/login')) {
           return json(200, { accessToken: 'x', refreshToken: 'y', account });
         }
+        if (url.includes('/assets')) {
+          return json(200, { items: [], page: 1, limit: 10, total: 0, totalPages: 1 });
+        }
         return json(200, []);
       })
     );

@@ -5,6 +5,8 @@ import type {
   AllocationEntry,
   AssetDto,
   AssetInput,
+  AssetPage,
+  AssetSearch,
   AssetUpdate,
   BeneficiaryDto,
   BeneficiaryInput,
@@ -26,8 +28,24 @@ import { apiBlob, apiFetch, postJson } from '../api/client';
 // Components own the success and failure toasts (docs/standards/frontend.md Rule 1); these hooks only
 // fetch and refresh caches. The report depends on nearly everything, so every write refreshes all of it.
 
-export const useAssets = () =>
-  useQuery({ queryKey: ['assets'], queryFn: () => apiFetch<AssetDto[]>('/assets') });
+type AssetQuery = Partial<Omit<AssetSearch, 'q'>> & { q?: string };
+
+/** One page of the assets, searched and filtered on the server. */
+export const useAssets = (search: AssetQuery) =>
+  useQuery({
+    queryKey: ['assets', search],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(search)) {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      }
+      return apiFetch<AssetPage>(`/assets?${params.toString()}`);
+    },
+    placeholderData: keepPreviousData,
+  });
+
+export const useAsset = (id: string) =>
+  useQuery({ queryKey: ['asset', id], queryFn: () => apiFetch<AssetDto>(`/assets/${id}`) });
 export const useBeneficiaries = () =>
   useQuery({
     queryKey: ['beneficiaries'],

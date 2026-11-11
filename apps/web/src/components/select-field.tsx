@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import Select from 'react-select';
 import { Field } from './field';
-import { selectClassNames } from './select-styles';
+import { selectClassNames, selectStyles } from './select-styles';
 
 export interface SelectOption<T extends string> {
   value: T;
@@ -41,6 +41,7 @@ export const SelectField = <T extends string>({
         noOptionsMessage={({ inputValue }) => `No match for "${inputValue}"`}
         onChange={option => option && onChange(option.value)}
         classNames={selectClassNames<SelectOption<T>>()}
+        styles={selectStyles<SelectOption<T>>()}
       />
     </Field>
   );

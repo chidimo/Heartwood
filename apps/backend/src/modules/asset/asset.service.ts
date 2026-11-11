@@ -1,5 +1,5 @@
 import type { DbClient } from '@heartwood/database';
-import type { AssetDto, AssetInput, AssetUpdate } from '@heartwood/shared';
+import type { AssetDto, AssetInput, AssetPage, AssetSearch, AssetUpdate } from '@heartwood/shared';
 import { notFoundError } from '../../utils/http-error';
 import { recordAudit } from '../audit/audit.service';
 import { removeAllocationsForAsset } from '../allocation/allocation.service';
@@ -7,6 +7,7 @@ import {
   findAsset,
   insertAsset,
   listAssets as listAssetRows,
+  searchAssets as searchAssetRows,
   softDeleteAsset,
   updateAsset as updateAssetRow,
 } from './asset.repository';
@@ -27,6 +28,27 @@ const toDto = (row: AssetRow): AssetDto => ({
 
 export const listAssets = async (db: DbClient, ownerId: string) =>
   (await listAssetRows(db, ownerId)).map(toDto);
+
+/** One page of the owner's assets, filtered and searched. For lists on screen; the checks use listAssets. */
+export const searchAssets = async (
+  db: DbClient,
+  ownerId: string,
+  search: AssetSearch
+): Promise<AssetPage> => {
+  const { rows, total, limit } = await searchAssetRows(
+    db,
+    ownerId,
+    { query: search.q || undefined, type: search.type, currency: search.currency },
+    { page: search.page, limit: search.limit }
+  );
+  return {
+    items: rows.map(toDto),
+    page: search.page,
+    limit,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  };
+};
 
 export const getAsset = async (db: DbClient, ownerId: string, id: string) => {
   const row = await findAsset(db, ownerId, id);

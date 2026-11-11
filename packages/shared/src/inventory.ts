@@ -499,3 +499,25 @@ export interface DirectoryPage {
 
 /** Which of the draft's two documents: the will, or the lawyer's notes. */
 export const draftDocumentParamSchema = z.object({ document: z.enum(['will', 'notes']) });
+
+export const ASSET_MAX_PAGE_SIZE = 100;
+export const ASSET_DEFAULT_PAGE_SIZE = 20;
+
+// Query-string values arrive as text, so numbers are coerced. The server clamps the page size again.
+export const assetSearchSchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  type: z.enum(ASSET_TYPES).optional(),
+  currency: currencySchema.optional(),
+  page: z.coerce.number().int().min(1).max(10000).default(1),
+  limit: z.coerce.number().int().min(1).max(ASSET_MAX_PAGE_SIZE).default(ASSET_DEFAULT_PAGE_SIZE),
+});
+export type AssetSearch = z.infer<typeof assetSearchSchema>;
+
+/** One page of assets, with the total of everything that matched the search and filters. */
+export interface AssetPage {
+  items: AssetDto[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
