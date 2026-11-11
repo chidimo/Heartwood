@@ -4,7 +4,7 @@ import { cn } from '../utils/cn';
 interface Props {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'danger';
   /** Shows a spinner and blocks presses while a request is in flight. */
   loading?: boolean;
   disabled?: boolean;
@@ -29,7 +29,9 @@ export const Button = ({
       onPress={onPress}
       className={cn(
         'h-12 flex-row items-center justify-center rounded-xl px-5',
-        variant === 'primary' ? 'bg-primary-600' : 'border border-primary-600/40',
+        variant === 'primary' && 'bg-primary-600',
+        variant === 'secondary' && 'border border-primary-600/40',
+        variant === 'danger' && 'border border-danger/50',
         blocked && 'opacity-60'
       )}
     >
@@ -37,7 +39,9 @@ export const Button = ({
       <Text
         className={cn(
           'text-base font-semibold',
-          variant === 'primary' ? 'text-white' : 'text-primary-700 dark:text-primary-200',
+          variant === 'primary' && 'text-white',
+          variant === 'secondary' && 'text-primary-700 dark:text-primary-200',
+          variant === 'danger' && 'text-danger',
           loading && 'ml-2'
         )}
       >

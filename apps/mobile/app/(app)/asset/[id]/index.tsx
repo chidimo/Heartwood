@@ -73,18 +73,33 @@ const AssetView = ({ asset }: { asset: AssetDto }) => {
           {formatValue(asset.roughValue, asset.currency)}
         </Text>
         {asset.notes && <Text className="mt-2 text-ink/70 dark:text-white/70">{asset.notes}</Text>}
-        <Pressable onPress={handleEditDetails} accessibilityRole="button" className="mt-1">
-          <Text className="text-primary-600 dark:text-primary-200">Edit details</Text>
-        </Pressable>
+      </View>
+
+      <View className="flex-row gap-2">
+        <View className="flex-1">
+          <Button label="Distribute" onPress={handleEdit} testID="edit-distribution" />
+        </View>
+        <View className="flex-1">
+          <Button
+            label="Details"
+            variant="secondary"
+            onPress={handleEditDetails}
+            testID="edit-details"
+          />
+        </View>
+        <View className="flex-1">
+          <Button
+            label="Remove"
+            variant="danger"
+            onPress={handleDelete}
+            loading={remove.isPending}
+            testID="remove-asset"
+          />
+        </View>
       </View>
 
       <Text className="mt-2 text-lg font-semibold text-ink dark:text-white">Who gets it?</Text>
       <AssetDistribution assetId={asset.id} />
-
-      <Button label="Edit distribution" onPress={handleEdit} testID="edit-distribution" />
-      <Pressable onPress={handleDelete} accessibilityRole="button" className="mt-2">
-        <Text className="text-center text-danger">Remove this asset</Text>
-      </Pressable>
     </Screen>
   );
 };
