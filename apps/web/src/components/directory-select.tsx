@@ -3,7 +3,7 @@ import Select from 'react-select';
 import { INSTITUTION_TYPE_OPTIONS, type DirectoryEntry } from '@heartwood/shared';
 import { useOrganizationDirectory } from '../features/api';
 import { Field } from './field';
-import { selectClassNames } from './select-styles';
+import { selectClassNames, selectStyles } from './select-styles';
 
 const typeLabel = (entry: DirectoryEntry) =>
   INSTITUTION_TYPE_OPTIONS.find(o => o.value === entry.institutionType)?.label ??
@@ -52,6 +52,7 @@ export const DirectorySelect = ({ value, onPick }: Props) => {
         noOptionsMessage={() => 'Not in our list. Enter it yourself instead.'}
         onChange={entry => entry && onPick(entry)}
         classNames={selectClassNames<DirectoryEntry>()}
+        styles={selectStyles<DirectoryEntry>()}
       />
     </Field>
   );
