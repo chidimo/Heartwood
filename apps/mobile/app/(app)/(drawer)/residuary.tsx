@@ -1,12 +1,7 @@
 import { useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  type BeneficiaryDto,
-  residuaryFormProblem,
-  splitEvenly,
-  toResiduaryEntries,
-} from '@heartwood/shared';
+import { type BeneficiaryDto, residuaryFormProblem, toResiduaryEntries } from '@heartwood/shared';
 import { errorMessage } from '../../../src/api/client';
 import { Button } from '../../../src/components/button';
 import { QueryState } from '../../../src/components/query-state';
@@ -57,12 +52,6 @@ const ResiduaryEditor = ({
         Anything you haven't given to someone in particular, or forget to list, goes to these
         people.
       </Text>
-      <Pressable
-        onPress={() => setShares(splitEvenly(beneficiaries.map(b => b.id)))}
-        accessibilityRole="button"
-      >
-        <Text className="text-primary-600 dark:text-primary-200">Split evenly</Text>
-      </Pressable>
       <SharesEditor beneficiaries={beneficiaries} shares={shares} onChange={setShares} />
       {problem && <Text className="text-sm text-danger">{problem}</Text>}
     </Screen>

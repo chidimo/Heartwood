@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
-import {
-  residuaryFormProblem,
-  splitEvenly,
-  toResiduaryEntries,
-  type BeneficiaryDto,
-} from '@heartwood/shared';
+import { residuaryFormProblem, toResiduaryEntries, type BeneficiaryDto } from '@heartwood/shared';
 import { getErrorMessage } from '../api/client';
 import { Button } from '../components/button';
 import { Heading } from '../components/layout';
@@ -41,11 +36,6 @@ const ResiduaryEditor = ({
         Anything you haven't given to someone in particular, or forget to list, goes to these
         people.
       </p>
-      <div>
-        <Button variant="link" onClick={() => setShares(splitEvenly(beneficiaries.map(b => b.id)))}>
-          Split evenly
-        </Button>
-      </div>
       <SharesEditor beneficiaries={beneficiaries} shares={shares} onChange={setShares} />
       {problem && (
         <p role="alert" className="text-sm text-danger">

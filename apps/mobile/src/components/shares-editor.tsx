@@ -1,30 +1,70 @@
-import { Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import {
   type BeneficiaryDto,
   beneficiarySubtitle,
   formatTotal,
+  splitEvenly,
   totalHundredths,
 } from '@heartwood/shared';
 import { cn } from '../utils/cn';
+import { Button } from './button';
+import { Select } from './select';
 
 interface Props {
   beneficiaries: BeneficiaryDto[];
-  /** beneficiary id -> percent as typed */
+  /** beneficiary id -> percent as typed. A key means the person is in the split, even with no number yet. */
   shares: Record<string, string>;
   onChange: (shares: Record<string, string>) => void;
 }
 
-/** One percentage box per beneficiary, with a running total that turns green at exactly 100%. */
+/** The people in a split, added one at a time, with a running total that turns green at exactly 100%. */
 export const SharesEditor = ({ beneficiaries, shares, onChange }: Props) => {
   const complete = totalHundredths(shares) === 10000;
+  const added = Object.keys(shares)
+    .map(id => beneficiaries.find(b => b.id === id))
+    .filter((b): b is BeneficiaryDto => b !== undefined);
+  const available = beneficiaries.filter(b => !(b.id in shares));
+
+  const handleAdd = (id: string) => onChange({ ...shares, [id]: '' });
+  const handleRemove = (id: string) =>
+    onChange(Object.fromEntries(Object.entries(shares).filter(([key]) => key !== id)));
 
   return (
     <View className="gap-3">
-      {beneficiaries.map(b => (
+      {available.length > 0 && (
+        <Select
+          label="Add a beneficiary"
+          value=""
+          options={available.map(b => ({ value: b.id, label: b.name }))}
+          onChange={handleAdd}
+          testID="add-share"
+        />
+      )}
+      {added.length > 1 && (
+        <Button
+          label="Split evenly"
+          variant="secondary"
+          onPress={() => onChange(splitEvenly(Object.keys(shares)))}
+          testID="split-evenly"
+        />
+      )}
+      {added.length === 0 && (
+        <Text className="text-ink/60 dark:text-white/60">
+          No one yet. Add the first beneficiary.
+        </Text>
+      )}
+      {added.map(b => (
         <View key={b.id} className="flex-row items-center justify-between gap-3">
           <View className="flex-1">
             <Text className="text-base text-ink dark:text-white">{b.name}</Text>
             <Text className="text-xs text-ink/60 dark:text-white/60">{beneficiarySubtitle(b)}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${b.name}`}
+              onPress={() => handleRemove(b.id)}
+            >
+              <Text className="pt-1 text-xs text-danger">Remove</Text>
+            </Pressable>
           </View>
           <View className="w-28 flex-row items-center rounded-xl border border-primary-600/30 bg-white px-3 dark:bg-primary-900">
             <TextInput

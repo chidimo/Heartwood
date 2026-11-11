@@ -5,7 +5,6 @@ import {
   allocationFormProblem,
   formFromAllocations,
   recipientIds,
-  splitEvenly,
   toAllocationEntries,
   type AllocationDto,
   type AllocationForm,
@@ -44,14 +43,6 @@ interface FieldsProps {
 
 const SplitFields = ({ beneficiaries, form, onChange }: FieldsProps) => (
   <>
-    <div>
-      <Button
-        variant="link"
-        onClick={() => onChange({ ...form, shares: splitEvenly(beneficiaries.map(b => b.id)) })}
-      >
-        Split evenly
-      </Button>
-    </div>
     <SharesEditor
       beneficiaries={beneficiaries}
       shares={form.shares}

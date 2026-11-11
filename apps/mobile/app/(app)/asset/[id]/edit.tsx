@@ -12,7 +12,6 @@ import {
   type ExecutorDto,
   formFromAllocations,
   recipientIds,
-  splitEvenly,
   toAllocationEntries,
 } from '@heartwood/shared';
 import { errorMessage } from '../../../../src/api/client';
@@ -47,12 +46,6 @@ interface FieldsProps {
 
 const SplitFields = ({ beneficiaries, form, onChange }: FieldsProps) => (
   <>
-    <Pressable
-      onPress={() => onChange({ ...form, shares: splitEvenly(beneficiaries.map(b => b.id)) })}
-      accessibilityRole="button"
-    >
-      <Text className="text-primary-600 dark:text-primary-200">Split evenly</Text>
-    </Pressable>
     <SharesEditor
       beneficiaries={beneficiaries}
       shares={form.shares}

@@ -29,14 +29,60 @@ const CHIDI = person('chidi', 'Chidi');
 const LAWYER: ExecutorDto = { id: 'lawyer', kind: 'lawyer', name: 'Barr. Adeyemi', contact: null };
 
 describe('SharesEditor', () => {
-  it('shows a running total and reports typed shares', async () => {
+  it('shows only the people added so far, with a running total, and reports typed shares', async () => {
     const onChange = vi.fn();
     render(
-      <SharesEditor beneficiaries={[ADA, CHIDI]} shares={{ ada: '60' }} onChange={onChange} />
+      <SharesEditor
+        beneficiaries={[ADA, CHIDI]}
+        shares={{ ada: '60', chidi: '' }}
+        onChange={onChange}
+      />
     );
     expect(screen.getByTestId('shares-total')).toHaveTextContent('60%');
     await userEvent.type(screen.getByLabelText('Share for Chidi'), '4');
     expect(onChange).toHaveBeenCalledWith({ ada: '60', chidi: '4' });
+  });
+
+  it('starts empty and adds a beneficiary when picked from the dropdown', async () => {
+    const onChange = vi.fn();
+    render(<SharesEditor beneficiaries={[ADA, CHIDI]} shares={{}} onChange={onChange} />);
+    expect(screen.getByText('No one yet. Add the first beneficiary.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Share for Ada')).toBeNull();
+    await userEvent.click(screen.getByLabelText('Add a beneficiary'));
+    await userEvent.click(screen.getByText('Chidi'));
+    expect(onChange).toHaveBeenCalledWith({ chidi: '' });
+  });
+
+  it('only offers people who are not in the split yet, and removes one on request', async () => {
+    const onChange = vi.fn();
+    render(
+      <SharesEditor
+        beneficiaries={[ADA, CHIDI]}
+        shares={{ ada: '50', chidi: '50' }}
+        onChange={onChange}
+      />
+    );
+    expect(screen.queryByLabelText('Add a beneficiary')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Ada' }));
+    expect(onChange).toHaveBeenCalledWith({ chidi: '50' });
+  });
+
+  it('splits evenly between the people added, with an obvious button', async () => {
+    const onChange = vi.fn();
+    render(
+      <SharesEditor
+        beneficiaries={[ADA, CHIDI]}
+        shares={{ ada: '', chidi: '' }}
+        onChange={onChange}
+      />
+    );
+    await userEvent.click(screen.getByRole('button', { name: /Split evenly/ }));
+    expect(onChange).toHaveBeenCalledWith({ ada: '50', chidi: '50' });
+  });
+
+  it('hides the split button until two people are added', () => {
+    render(<SharesEditor beneficiaries={[ADA, CHIDI]} shares={{ ada: '' }} onChange={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Split evenly/ })).toBeNull();
   });
 
   it('marks exactly 100% as complete', () => {
