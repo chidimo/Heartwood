@@ -140,5 +140,21 @@ export const apiFetch = async <T>(
   return readBody<T>(await send(path, init, tokens.access()));
 };
 
+/** A file from the backend (the Word draft). Same sign-in handling as apiFetch. */
+export const apiBlob = async (path: string): Promise<Blob> => {
+  const toBlob = async (res: Response) => {
+    if (!res.ok) await readBody<unknown>(res);
+    return res.blob();
+  };
+  const first = await send(path, {}, tokens.access());
+  if (first.status !== 401) return toBlob(first);
+  if (!(await refreshSession())) {
+    tokens.clear();
+    onSignedOut?.();
+    return toBlob(first);
+  }
+  return toBlob(await send(path, {}, tokens.access()));
+};
+
 export const postJson = <T>(path: string, body: unknown, options: Options = {}) =>
   apiFetch<T>(path, { ...options, method: 'POST', body: JSON.stringify(body) });

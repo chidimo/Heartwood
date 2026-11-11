@@ -6,6 +6,7 @@ import type {
   BeneficiaryInput,
   BeneficiaryUpdate,
   DirectoryPage,
+  DraftWill,
   DirectorySearch,
   ExecutorDto,
   ExecutorInput,
@@ -78,6 +79,9 @@ export const useOrganizationStates = () =>
     queryFn: () => apiFetch<string[]>('/organization-directory/states'),
     staleTime: 60 * 60 * 1000,
   });
+
+export const useDraftWill = () =>
+  useQuery({ queryKey: ['draft-will'], queryFn: () => apiFetch<DraftWill>('/draft-will') });
 
 export const useAllocations = (assetId: string) =>
   useQuery({

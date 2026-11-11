@@ -33,7 +33,7 @@ Scope from [exploration.md](exploration.md) §6. Needs a plan doc per item befor
 3. ⬜ Beneficiaries, including contingency (what if the beneficiary dies first).
 4. ⬜ Allocation of each asset among beneficiaries, with the validation rules below.
 5. ⬜ Residuary clause for anything unlisted or left over.
-6. ⬜ Draft will export for lawyer review. Blocked on Q1 and Q2.
+6. 🟡 Draft will export for lawyer review: built on web (preview, Word, print) and mobile (share as text); the wording waits for a lawyer (Q24, Q1, Q2). See [plans/2026-11-11-draft-will-export.md](plans/2026-11-11-draft-will-export.md).
 
 Validation rules to build early: allocations per asset sum to 100% (or are one clear specific bequest);
 every asset is covered by an allocation or the residuary clause; flag beneficiaries with no contingency; flag
@@ -44,7 +44,7 @@ assets that may fall under customary or religious law (Q5).
 Several of the biggest unknowns are legal. Don't wait for a working prototype to start asking.
 
 1. ⬜ Find and meet a Nigerian probate lawyer. Answers Q1, Q2, Q5, Q7, Q10.
-2. ⬜ Show them the draft will export from §1 and take their feedback before building further.
+2. ⬜ Show them the draft will export from §1 and take their feedback before building further. The briefing is [lawyer-briefing.md](lawyer-briefing.md).
 
 ### 3. After lawyer feedback
 
@@ -67,3 +67,4 @@ One row per doc in `docs/plans/`.
 | [plans/2026-11-10-mobile-app-scaffold.md](plans/2026-11-10-mobile-app-scaffold.md)   | 🟡 In progress | `apps/mobile` scaffolded and verified (typecheck, lint, 19 tests, iOS bundle export); runs in the iOS Simulator against the local backend; Android not tried; EAS not set up (Q16). |
 | [plans/2026-11-10-conditional-gifts.md](plans/2026-11-10-conditional-gifts.md)       | ⬜ Not started | Planning only: conditions on a gift need a holder and an "if unmet" plan, and a date of birth for age checks. Waiting on Q18 (what is enforceable), Q19 and Q20.                    |
 | [plans/2026-11-10-web-client.md](plans/2026-11-10-web-client.md)                     | 🟡 In progress | Web pages for the whole inventory built and verified in a browser; saving each form not yet exercised.                                                                              |
+| [plans/2026-11-11-draft-will-export.md](plans/2026-11-11-draft-will-export.md)       | 🟡 In progress | Draft will built from the inventory: preview, Word download and print on web, share as text on mobile. Standard-clause wording and signing block wait for a lawyer (Q24, Q1, Q2).   |

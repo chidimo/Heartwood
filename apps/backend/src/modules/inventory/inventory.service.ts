@@ -93,12 +93,11 @@ export const replaceResiduary = (db: DbClient, ownerId: string, entries: Residua
 const SEVERITY_RANK: Record<InventoryIssue['severity'], number> = { error: 0, warning: 1, info: 2 };
 const MAX_PAGE_SIZE = 100;
 
-/** The review of an inventory: every check runs, then one page of the issues is returned, worst first. */
-export const getInventoryReport = async (
+/** Every check on an inventory, run in full: the issues, worst first. */
+export const findInventoryIssues = async (
   db: DbClient,
-  ownerId: string,
-  paging: { page: number; limit: number } = { page: 1, limit: 20 }
-): Promise<InventoryReport> => {
+  ownerId: string
+): Promise<InventoryIssue[]> => {
   const [assets, beneficiaries, coverage] = await Promise.all([
     listAssets(db, ownerId),
     listBeneficiaries(db, ownerId),
@@ -197,6 +196,16 @@ export const getInventoryReport = async (
 
   // Array.sort is stable, so issues of one severity keep the order they were found in.
   issues.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
+  return issues;
+};
+
+/** The review of an inventory: the verdict and totals, and one page of the issues. */
+export const getInventoryReport = async (
+  db: DbClient,
+  ownerId: string,
+  paging: { page: number; limit: number } = { page: 1, limit: 20 }
+): Promise<InventoryReport> => {
+  const issues = await findInventoryIssues(db, ownerId);
   const limit = Math.min(paging.limit, MAX_PAGE_SIZE);
   const counts = { error: 0, warning: 0, info: 0 };
   for (const issue of issues) counts[issue.severity] += 1;

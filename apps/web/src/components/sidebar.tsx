@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import {
   Building2,
   ClipboardCheck,
+  FileText,
   LogOut,
   PieChart,
   Scale,
@@ -13,7 +14,14 @@ import {
 import { cn } from '../lib/cn';
 
 interface NavItem {
-  to: '/assets' | '/beneficiaries' | '/organizations' | '/executors' | '/residuary' | '/review';
+  to:
+    | '/assets'
+    | '/beneficiaries'
+    | '/organizations'
+    | '/executors'
+    | '/residuary'
+    | '/review'
+    | '/draft';
   label: string;
   icon: LucideIcon;
 }
@@ -25,6 +33,7 @@ const NAV: NavItem[] = [
   { to: '/executors', label: 'Executors and lawyers', icon: Scale },
   { to: '/residuary', label: 'Everything else', icon: PieChart },
   { to: '/review', label: 'Review', icon: ClipboardCheck },
+  { to: '/draft', label: 'Draft will', icon: FileText },
 ];
 
 interface Props {
@@ -91,7 +100,7 @@ const AccountFooter = ({ name, email, onSignOut }: Omit<Props, 'isOpen' | 'onClo
 /** Fixed sidebar on wide screens; a slide-in drawer on narrow ones. */
 export const Sidebar = ({ isOpen, onClose, name, email, onSignOut }: Props) => (
   <>
-    <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-primary-600/20 lg:bg-white dark:lg:bg-ink">
+    <aside className="hidden print:hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-primary-600/20 lg:bg-white dark:lg:bg-ink">
       <div className="flex h-16 shrink-0 items-center px-4">
         <Brand />
       </div>

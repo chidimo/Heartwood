@@ -12,6 +12,8 @@ import {
   reportQuerySchema,
   replaceResiduarySchema,
 } from '@heartwood/shared';
+import { getDraftWill } from '../modules/draft-will/draft-will.service';
+import { renderDraftDocx } from '../modules/draft-will/draft-will.docx';
 import { createAuthenticate, requireAccountId } from '../middleware/authenticate';
 import { parseBody } from '../middleware/validate';
 import { getResiduary } from '../modules/allocation/allocation.service';
@@ -171,6 +173,20 @@ export function createInventoryRoutes(db: DbClient, authSecret: string) {
   router.get('/organization-directory/states', async (_req, res) =>
     ok(res, await listOrganizationStates(db))
   );
+
+  router.get('/draft-will', async (req, res) =>
+    ok(res, await getDraftWill(db, requireAccountId(req)))
+  );
+  router.get('/draft-will/docx', async (req, res) => {
+    const file = await renderDraftDocx(await getDraftWill(db, requireAccountId(req)));
+    res
+      .status(200)
+      .set({
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Disposition': 'attachment; filename="draft-will.docx"',
+      })
+      .send(file);
+  });
 
   router.get('/inventory/report', async (req, res) =>
     ok(

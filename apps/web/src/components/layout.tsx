@@ -37,7 +37,7 @@ export const AppLayout = () => {
         email={account?.email}
         onSignOut={handleSignOut}
       />
-      <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-primary-600/20 bg-white/90 px-4 backdrop-blur lg:hidden dark:bg-ink/90">
+      <header className="sticky top-0 z-20 print:hidden flex h-14 items-center gap-3 border-b border-primary-600/20 bg-white/90 px-4 backdrop-blur lg:hidden dark:bg-ink/90">
         <button
           type="button"
           onClick={() => setIsNavOpen(true)}
@@ -50,7 +50,7 @@ export const AppLayout = () => {
           Heartwood
         </span>
       </header>
-      <main className="py-6 lg:pl-64">
+      <main className="py-6 lg:pl-64 print:py-0 print:pl-0">
         <div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 sm:px-6">
           <Outlet />
         </div>

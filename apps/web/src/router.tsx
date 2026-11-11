@@ -11,6 +11,7 @@ import { AssetEditPage } from './pages/asset-edit';
 import { AssetViewPage } from './pages/asset-view';
 import { BeneficiariesPage } from './pages/beneficiaries';
 import { AssetsPage } from './pages/assets';
+import { DraftWillPage } from './pages/draft-will';
 import { ExecutorsPage } from './pages/executors';
 import { LoginPage } from './pages/login';
 import { OrganizationsPage } from './pages/organizations';
@@ -58,6 +59,7 @@ export const createAppRouter = (history?: RouterHistory) =>
         route('/executors', ExecutorsPage),
         route('/residuary', ResiduaryPage),
         route('/review', ReviewPage),
+        route('/draft', DraftWillPage),
       ]),
     ]),
   });

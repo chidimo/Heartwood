@@ -9,6 +9,7 @@ import type {
   BeneficiaryInput,
   BeneficiaryUpdate,
   DirectoryPage,
+  DraftWill,
   DirectorySearch,
   ExecutorDto,
   ExecutorInput,
@@ -16,7 +17,7 @@ import type {
   InventoryReport,
   ResiduaryEntry,
 } from '@heartwood/shared';
-import { apiFetch, postJson } from '../api/client';
+import { apiBlob, apiFetch, postJson } from '../api/client';
 
 // Components own the success and failure toasts (docs/standards/frontend.md Rule 1); these hooks only
 // fetch and refresh caches. The report depends on nearly everything, so every write refreshes all of it.
@@ -52,6 +53,19 @@ export const useOrganizationStates = () =>
     queryFn: () => apiFetch<string[]>('/organization-directory/states'),
     staleTime: 60 * 60 * 1000,
   });
+export const useDraftWill = () =>
+  useQuery({ queryKey: ['draft-will'], queryFn: () => apiFetch<DraftWill>('/draft-will') });
+
+/** Saves the Word version of the draft through the browser's download. */
+export const downloadDraftWord = async () => {
+  const url = URL.createObjectURL(await apiBlob('/draft-will/docx'));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'draft-will.docx';
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
 export const useAllocations = (assetId: string) =>
   useQuery({
     queryKey: ['allocations', assetId],

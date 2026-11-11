@@ -1246,6 +1246,48 @@ describe('inventory', () => {
     });
   });
 
+  describe('draft will', () => {
+    it('writes the inventory up as a draft, privately, with executors and gifts', async () => {
+      const alice = as((await registerTestUser(app)).bearer);
+      const bob = as((await registerTestUser(app)).bearer);
+      const flat = (await alice.post('/api/assets', { type: 'property', description: 'The flat' }))
+        .body;
+      const ada = (
+        await alice.post('/api/beneficiaries', { name: 'Ada Obi', relationship: 'daughter' })
+      ).body;
+      await alice.post('/api/executors', { kind: 'executor', name: 'Uncle Emeka' });
+      await alice.put(`/api/assets/${flat.id}/allocations`, {
+        entries: [{ beneficiaryId: ada.id, sharePercent: 100 }],
+      });
+      const draft = (await alice.get('/api/draft-will')).body;
+      const text = JSON.stringify(draft);
+      expect(draft.banner).toContain('not a valid will');
+      expect(text).toContain('I give The flat to the following');
+      expect(text).toContain('Ada Obi (my daughter) as to 100%');
+      expect(text).toContain('I appoint Uncle Emeka to be the executor of this will.');
+      const others = JSON.stringify((await bob.get('/api/draft-will')).body);
+      expect(others).not.toContain('The flat');
+      expect(others).not.toContain('Ada Obi');
+    });
+
+    it('downloads as a Word document and needs a session', async () => {
+      const alice = as((await registerTestUser(app)).bearer);
+      const res = await alice
+        .get('/api/draft-will/docx')
+        .buffer(true)
+        .parse((response, done) => {
+          const chunks: Buffer[] = [];
+          response.on('data', (chunk: Buffer) => chunks.push(chunk));
+          response.on('end', () => done(null, Buffer.concat(chunks)));
+        });
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toContain('wordprocessingml.document');
+      expect(res.headers['content-disposition']).toContain('draft-will.docx');
+      expect((res.body as Buffer).subarray(0, 2).toString()).toBe('PK');
+      expect((await request(app).get('/api/draft-will/docx')).status).toBe(401);
+    });
+  });
+
   describe('inventory report', () => {
     it('is ok and empty for a new user', async () => {
       const api = as((await registerTestUser(app)).bearer);

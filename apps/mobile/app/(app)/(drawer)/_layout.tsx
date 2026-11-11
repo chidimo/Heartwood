@@ -36,6 +36,7 @@ const DrawerLayout = () => {
         options={{ title: 'Everything else', drawerLabel: 'Everything else' }}
       />
       <Drawer.Screen name="review" options={{ title: 'Review', drawerLabel: 'Review' }} />
+      <Drawer.Screen name="draft" options={{ title: 'Draft will', drawerLabel: 'Draft will' }} />
     </Drawer>
   );
 };
