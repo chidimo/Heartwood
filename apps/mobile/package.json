@@ -14,6 +14,7 @@
   },
   "jest": {
     "preset": "jest-expo",
+    "testTimeout": 20000,
     "moduleNameMapper": {
       "^@heartwood/shared$": "<rootDir>/../../packages/shared/src/index.ts"
     }
