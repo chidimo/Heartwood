@@ -1,0 +1,79 @@
+name: CI
+
+# Runs only on pull requests into main (i.e. dev -> main releases). Day-to-day PRs into dev
+# are not gated here; run `yarn typecheck`, `yarn test:backend` and `yarn format:check` locally.
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: heartwood_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+
+      - name: Format check
+        run: yarn format:check
+
+      - name: Build shared packages
+        run: yarn packages:build
+
+      - name: Typecheck backend and web
+        run: yarn typecheck
+
+      - name: Lint and test web
+        run: |
+          yarn web:lint
+          yarn web:test
+
+      - name: Backend tests
+        run: npx jest --config jest.config.js --coverage
+        env:
+          TEST_DATABASE_URL: postgresql://test:test@localhost:5433/heartwood_test
+
+      - name: Build web
+        run: yarn web:build
+
+      # apps/mobile is a standalone package (not a yarn workspace), so it has its own install.
+      - name: Install mobile dependencies
+        run: yarn --cwd apps/mobile install --frozen-lockfile
+
+      - name: Mobile typecheck, lint and tests
+        run: |
+          yarn mobile:typecheck
+          yarn mobile:lint
+          yarn mobile:test --ci
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: coverage/backend
+          retention-days: 14

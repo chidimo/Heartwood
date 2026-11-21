@@ -1,0 +1,68 @@
+[
+  {
+    "name": "Covenant University",
+    "institutionType": "university",
+    "state": "Ogun",
+    "city": "Ota"
+  },
+  {
+    "name": "Babcock University",
+    "institutionType": "university",
+    "state": "Ogun",
+    "city": "Ilishan-Remo"
+  },
+  {
+    "name": "Bowen University",
+    "institutionType": "university",
+    "state": "Osun",
+    "city": "Iwo"
+  },
+  {
+    "name": "Redeemer's University",
+    "institutionType": "university",
+    "state": "Osun",
+    "city": "Ede"
+  },
+  {
+    "name": "Baptist Medical Centre",
+    "institutionType": "hospital",
+    "state": "Oyo",
+    "city": "Ogbomoso"
+  },
+  {
+    "name": "Sacred Heart Hospital",
+    "institutionType": "hospital",
+    "state": "Ogun",
+    "city": "Abeokuta"
+  },
+  {
+    "name": "St. Luke's Hospital",
+    "institutionType": "hospital",
+    "state": "Akwa Ibom",
+    "city": "Anua"
+  },
+  {
+    "name": "Evangel Hospital",
+    "institutionType": "hospital",
+    "state": "Plateau",
+    "city": "Jos"
+  },
+  {
+    "name": "Nigerian Red Cross Society",
+    "institutionType": "charity",
+    "state": "FCT",
+    "city": "Abuja"
+  },
+  {
+    "name": "National Mosque",
+    "institutionType": "mosque",
+    "state": "FCT",
+    "city": "Abuja"
+  },
+  {
+    "name": "National Christian Centre",
+    "institutionType": "church",
+    "state": "FCT",
+    "city": "Abuja"
+  }
+]

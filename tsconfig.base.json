@@ -1,0 +1,27 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "types": ["node"],
+    "paths": {
+      "@heartwood/database": ["packages/database/src/index.ts"],
+      "@heartwood/database/*": ["packages/database/src/*"],
+      "@heartwood/shared": ["packages/shared/src/index.ts"],
+      "@heartwood/shared/*": ["packages/shared/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}
