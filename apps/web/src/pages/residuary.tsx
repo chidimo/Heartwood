@@ -64,7 +64,7 @@ export const ResiduaryPage = () => {
               if (people.length === 0) {
                 return (
                   <Link
-                    to="/people/new"
+                    to="/beneficiaries"
                     className="text-primary-600 underline dark:text-primary-200"
                   >
                     Add a beneficiary first.

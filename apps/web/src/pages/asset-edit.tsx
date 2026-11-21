@@ -147,7 +147,7 @@ const EditorLoader = ({
 
   if (beneficiaries.length === 0) {
     return (
-      <Link to="/people/new" className="text-primary-600 underline dark:text-primary-200">
+      <Link to="/beneficiaries" className="text-primary-600 underline dark:text-primary-200">
         Add a beneficiary first, then decide who gets this.
       </Link>
     );
