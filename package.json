@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "nx run-many -t start dev --projects=backend,web --parallel",
     "backend:start": "nx run backend:start",
-    "backend:build": "yarn packages:build && nx run backend:build",
+    "backend:build": "npm run packages:build && nx run backend:build",
     "packages:build": "nx run-many -t build --projects=database,shared",
     "web:dev": "nx run web:dev",
     "web:build": "nx run web:build",

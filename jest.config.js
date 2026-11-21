@@ -35,7 +35,7 @@ module.exports = {
     '!apps/backend/src/**/*.test.ts',
     '!apps/backend/src/test-utils/**',
     '!apps/backend/src/scripts/**',
-    '!apps/backend/src/index.ts',
+    '!apps/backend/src/main.ts',
   ],
   coverageDirectory: '<rootDir>/coverage/backend',
   coverageReporters: ['text-summary', 'lcov'],

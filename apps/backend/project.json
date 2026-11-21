@@ -6,7 +6,7 @@
     "start": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "npx tsx watch src/index.ts",
+        "command": "npx tsx watch src/main.ts",
         "cwd": "apps/backend"
       }
     },
