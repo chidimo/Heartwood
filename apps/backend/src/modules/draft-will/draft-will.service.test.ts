@@ -2,6 +2,7 @@ import type { DraftWill } from '@heartwood/shared';
 import { referenceFor } from './draft-will.service';
 
 const draft = (preparedAt: string, clause = 'I revoke all earlier wills.'): DraftWill => ({
+  testatorName: 'Seeded Tester',
   preparedAt,
   reference: null,
   will: {
