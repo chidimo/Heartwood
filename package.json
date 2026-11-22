@@ -26,6 +26,7 @@
     "mobile:start": "yarn --cwd apps/mobile start",
     "mobile:ios": "yarn --cwd apps/mobile ios",
     "mobile:android": "yarn --cwd apps/mobile android",
+    "mobile:build:preview:local": "yarn --cwd apps/mobile build:preview:local",
     "mobile:typecheck": "yarn --cwd apps/mobile typecheck",
     "mobile:test": "yarn --cwd apps/mobile test",
     "mobile:lint": "yarn --cwd apps/mobile lint",
